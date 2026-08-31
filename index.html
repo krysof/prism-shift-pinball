@@ -2,10 +2,10 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#060813">
-  <meta name="description" content="PRISM SHIFT — 由 WebAssembly 驱动的次世代霓虹弹珠台">
-  <title>PRISM SHIFT // WASM Pinball</title>
+  <meta name="description" content="MARIO PINBALL — 由 WebAssembly 驱动的高身蘑菇王国街机弹珠台">
+  <title>MARIO PINBALL // WASM Arcade</title>
   <link rel="icon" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,13 +17,14 @@
   <div class="noise" aria-hidden="true"></div>
 
   <header class="topbar">
-    <a class="brand" href="#" aria-label="PRISM SHIFT 首页">
+    <a class="brand" href="#" aria-label="MARIO PINBALL 首页">
       <span class="brand-mark"><i></i></span>
-      <span>PRISM <b>SHIFT</b></span>
+      <span>MARIO <b>PINBALL</b></span>
     </a>
     <div class="top-meta">
       <span class="live-dot"></span>
       <span id="wasmStatus">WASM INITIALIZING</span>
+      <span id="wakeStatus" class="wake-status">SCREEN READY</span>
       <button id="soundBtn" class="icon-btn" type="button" aria-label="切换声音" title="声音">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5-.5a5 5 0 0 1 0 7M19 6a8 8 0 0 1 0 12"/></svg>
       </button>
@@ -36,15 +37,18 @@
       <div class="arcade-machine">
         <div class="machine-crown" aria-hidden="true">
           <span class="crown-bolt left"></span><span class="crown-bolt right"></span>
-          <div class="marquee-kicker"><i></i> PRISM DYNAMICS / MODEL PX-07 <i></i></div>
-          <div class="marquee-title"><span>PRISM</span><b>SHIFT</b></div>
-          <div class="marquee-sub"><span>NEON PINBALL SYSTEM</span><em>1—4 PLAYER</em></div>
+          <div class="marquee-kicker"><i></i> MUSHROOM KINGDOM / WORLD 1-P <i></i></div>
+          <div class="marquee-title"><span>MARIO</span><b>PINBALL</b></div>
+          <div class="marquee-sub"><span>SUPER ARCADE SYSTEM</span><em>1—4 PLAYER</em></div>
+          <div class="backbox-speaker speaker-left"><i></i></div>
+          <div class="backbox-speaker speaker-right"><i></i></div>
+          <div class="backbox-score"><span>PLAYER 1</span><strong id="backScore">000 000</strong><em id="backBalls">● ● ●</em></div>
         </div>
 
         <div class="machine-body">
-          <div class="cabinet-rail rail-left" aria-hidden="true"><i></i><i></i><i></i><span>QUANTUM ARCADE</span></div>
+          <div class="cabinet-rail rail-left" aria-hidden="true"><i></i><i></i><i></i><span>MUSHROOM ARCADE</span></div>
           <div class="cabinet-rail rail-right" aria-hidden="true"><i></i><i></i><i></i><span>WASM POWERED</span></div>
-          <div class="screen-label" aria-hidden="true"><span>HI-DYNAMIC PLAYFIELD</span><i>RUST CORE / ONLINE</i></div>
+          <div class="screen-label" aria-hidden="true"><span>SUPER PLAYFIELD</span><i>RUST CORE / ONLINE</i></div>
 
           <div class="canvas-frame">
             <canvas id="game" width="800" height="1200" aria-label="PRISM SHIFT 弹珠台"></canvas>
@@ -52,9 +56,9 @@
 
             <div id="intro" class="modal-layer is-open">
               <div class="intro-card">
-                <p class="eyebrow"><span></span> INSERT COIN / READY <span></span></p>
-                <h1>PRISM<br><em>SHIFT</em></h1>
-                <p class="tagline">击穿光谱。点燃超驱。</p>
+                <p class="eyebrow"><span></span> INSERT COIN / LET'S-A GO! <span></span></p>
+                <h1>MARIO<br><em>PINBALL</em></h1>
+                <p class="tagline">蘑菇王国弹珠大冒险</p>
                 <div class="controls-preview">
                   <div><kbd>A</kbd><kbd>←</kbd><span>左翼</span></div>
                   <div><kbd>D</kbd><kbd>→</kbd><span>右翼</span></div>
@@ -84,7 +88,7 @@
           </div>
 
           <div class="machine-console" aria-hidden="true">
-            <div class="console-copy"><span>CONTROL DECK</span><b>PX-07</b></div>
+            <div class="console-copy"><span>PLAYER CONTROL</span><b>WORLD 1-P</b></div>
             <div class="arcade-button pink"><i></i><span>LEFT</span></div>
             <div class="coin-module"><i></i><b>25¢</b><span>INSERT COIN</span></div>
             <div class="arcade-button cyan"><i></i><span>RIGHT</span></div>
@@ -93,7 +97,7 @@
 
           <div class="machine-lower" aria-hidden="true">
             <div class="vent"><i></i><i></i><i></i><i></i><i></i></div>
-            <span>PRISM DYNAMICS</span><b><i></i> SYSTEM READY</b>
+            <span>MUSHROOM ARCADE</span><b><i></i> LET'S-A GO!</b>
             <div class="service-lock"></div>
           </div>
         </div>
@@ -119,17 +123,17 @@
       </section>
 
       <section class="energy-block">
-        <div class="section-label"><span>PRISM DRIVE</span><b id="energyValue">0%</b></div>
+        <div class="section-label"><span>STAR POWER</span><b id="energyValue">0%</b></div>
         <div class="energy-track"><i id="energyFill"></i><em></em></div>
-        <p id="driveHint">命中目标以填充超驱核心</p>
+        <p id="driveHint">收集金币以点亮无敌星</p>
       </section>
 
       <section class="mission-block">
         <div class="section-label"><span>ACTIVE PROTOCOLS</span><b>03</b></div>
         <ul>
-          <li id="missionBumpers"><i>01</i><div><strong>共振连击</strong><span>连续撞击增幅器</span></div><em>+SYNC</em></li>
-          <li id="missionTargets"><i>02</i><div><strong>光谱收集</strong><span>点亮六枚棱镜靶</span></div><em id="targetProgress">0/6</em></li>
-          <li id="missionDrive"><i>03</i><div><strong>超驱模式</strong><span>充满 PRISM DRIVE</span></div><em>×3</em></li>
+          <li id="missionBumpers"><i>01</i><div><strong>蘑菇连击</strong><span>连续撞击蘑菇弹簧</span></div><em>+COIN</em></li>
+          <li id="missionTargets"><i>02</i><div><strong>问号砖块</strong><span>点亮六枚王国砖块</span></div><em id="targetProgress">0/6</em></li>
+          <li id="missionDrive"><i>03</i><div><strong>无敌星模式</strong><span>充满 STAR POWER</span></div><em>×3</em></li>
         </ul>
       </section>
 
@@ -140,13 +144,13 @@
       </section>
 
       <div class="panel-footer">
-        <span>PHYSICS</span><b>RUST / WASM</b><i></i><span>BUILD</span><b>1.0.0</b>
+        <span>PHYSICS</span><b>RUST / WASM</b><i></i><span>WORLD</span><b>1-P</b>
       </div>
     </aside>
   </main>
 
   <footer>
-    <span>© 2088 PRISM DYNAMICS</span>
+    <span>FAN-MADE MUSHROOM ARCADE</span>
     <button id="pauseBtn" type="button">PAUSE <kbd>P</kbd></button>
     <span>60 FPS QUANTUM PHYSICS</span>
   </footer>
