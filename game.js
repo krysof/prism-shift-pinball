@@ -152,6 +152,51 @@ function drawCabinet(drive) {
   });
 }
 
+function drawHardwareDetails(drive) {
+  // Precision-cut guide rails.
+  ctx.save();
+  const metal = ctx.createLinearGradient(0, 0, 18, 18);
+  metal.addColorStop(0, '#313b5d'); metal.addColorStop(.28, '#d4efff'); metal.addColorStop(.48, '#536181'); metal.addColorStop(.7, '#f5fbff'); metal.addColorStop(1, '#232b48');
+  ctx.strokeStyle = metal; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.shadowColor = 'rgba(153,220,255,.55)'; ctx.shadowBlur = 7;
+  ctx.beginPath(); ctx.moveTo(91, 677); ctx.bezierCurveTo(72, 555, 91, 380, 155, 250); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(632, 730); ctx.bezierCurveTo(661, 640, 660, 595, 647, 565); ctx.stroke();
+  ctx.restore();
+
+  // Illuminated roll-over lanes in the upper crown.
+  for (let i = 0; i < 4; i++) {
+    const x = 317 + i * 55, color = i % 2 ? '#6ff7ff' : '#a66bff';
+    ctx.save(); ctx.translate(x, 113);
+    ctx.beginPath(); ctx.roundRect(-19, -8, 38, 16, 8);
+    ctx.fillStyle = rgba(color, .08); ctx.strokeStyle = rgba(color, .36); ctx.lineWidth = 1.5; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(225,235,255,.42)'; ctx.font = '500 7px "DM Mono",monospace'; ctx.textAlign = 'center'; ctx.fillText(String.fromCharCode(80 + i), 0, 3); ctx.restore();
+  }
+
+  // Jewel inserts and multiplier ladder.
+  const jewels = [[325,735],[375,716],[425,716],[475,735]];
+  jewels.forEach(([x,y],i) => {
+    const color = i < 2 ? '#ff4fd8' : '#6ff7ff';
+    ctx.save(); ctx.translate(x,y); ctx.rotate(Math.PI/4);
+    ctx.fillStyle = rgba(color, drive > 0 ? .8 : .15 + i*.06); ctx.strokeStyle = rgba(color,.62); ctx.lineWidth = 2;
+    ctx.shadowColor = color; ctx.shadowBlur = drive > 0 ? 18 : 7; ctx.fillRect(-9,-9,18,18); ctx.strokeRect(-9,-9,18,18); ctx.restore();
+  });
+  ctx.fillStyle = 'rgba(111,247,255,.35)'; ctx.font = '500 7px "DM Mono",monospace'; ctx.textAlign='center'; ctx.fillText('PRISM MATRIX  /  2X  4X  8X',400,770);
+
+  // Fasteners, service markings and etched serials.
+  const bolts = [[76,235],[724,235],[76,755],[724,755],[112,949],[688,949]];
+  bolts.forEach(([x,y],i) => {
+    const g=ctx.createRadialGradient(x-2,y-2,0,x,y,6);g.addColorStop(0,'#f1f5ff');g.addColorStop(.28,'#7b87a3');g.addColorStop(.62,'#242c42');g.addColorStop(1,'#050811');
+    ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='rgba(180,198,230,.28)';ctx.lineWidth=1;ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x-2.5,y+(i%2?1:-1));ctx.lineTo(x+2.5,y+(i%2?-1:1));ctx.strokeStyle='rgba(4,7,13,.85)';ctx.stroke();
+  });
+  ctx.textAlign='left';ctx.fillStyle='rgba(109,122,157,.24)';ctx.font='500 6px "DM Mono",monospace';
+  ctx.fillText('CAL. 07-881 / MAG-RAIL',86,741);ctx.fillText('DANGER: HIGH FLUX',565,741);
+
+  // Directional inlays near the flippers.
+  [[216,988,1,'#ff4fd8'],[584,988,-1,'#6ff7ff']].forEach(([x,y,dir,color])=>{
+    ctx.save();ctx.translate(x,y);ctx.scale(dir,1);ctx.beginPath();ctx.moveTo(-13,-7);ctx.lineTo(13,0);ctx.lineTo(-13,7);ctx.closePath();ctx.fillStyle=rgba(color,.22);ctx.strokeStyle=rgba(color,.7);ctx.shadowColor=color;ctx.shadowBlur=8;ctx.fill();ctx.stroke();ctx.restore();
+  });
+}
+
 function drawBumper(x, y, r, color, index) {
   const pulse = .84 + .16 * Math.sin(elapsed * 3.2 + index * 1.4);
   radial(x, y, r * 2.2, color, pulse);
@@ -256,7 +301,7 @@ function drawFrame() {
   if(!wasm) return;
   const x=wasm.ball_x(),y=wasm.ball_y(),vx=wasm.ball_vx(),vy=wasm.ball_vy(),drive=wasm.game_overdrive(),mask=wasm.game_target_mask();
   ctx.save(); if(screenShake>0) ctx.translate((Math.random()-.5)*screenShake,(Math.random()-.5)*screenShake);
-  drawBackdrop(drive); drawCabinet(drive);
+  drawBackdrop(drive); drawCabinet(drive); drawHardwareDetails(drive);
   drawBumper(250,330,49,'#a66bff',0);drawBumper(535,315,49,'#6ff7ff',1);drawBumper(402,493,57,drive>0?'#ff4fd8':'#758cff',2);
   drawBumper(122,530,25,'#ff4fd8',3);drawBumper(625,520,25,'#6ff7ff',4);
   drawTargets(mask);drawSlings();

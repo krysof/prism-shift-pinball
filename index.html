@@ -33,39 +33,68 @@
   <main class="game-shell">
     <section class="table-stage" aria-label="弹珠台游戏区域">
       <div class="stage-lights" aria-hidden="true"></div>
-      <div class="canvas-frame">
-        <canvas id="game" width="800" height="1200" aria-label="PRISM SHIFT 弹珠台"></canvas>
-        <div class="scanline" aria-hidden="true"></div>
+      <div class="arcade-machine">
+        <div class="machine-crown" aria-hidden="true">
+          <span class="crown-bolt left"></span><span class="crown-bolt right"></span>
+          <div class="marquee-kicker"><i></i> PRISM DYNAMICS / MODEL PX-07 <i></i></div>
+          <div class="marquee-title"><span>PRISM</span><b>SHIFT</b></div>
+          <div class="marquee-sub"><span>NEON PINBALL SYSTEM</span><em>1—4 PLAYER</em></div>
+        </div>
 
-        <div id="intro" class="modal-layer is-open">
-          <div class="intro-card">
-            <p class="eyebrow"><span></span> QUANTUM ARCADE / 07</p>
-            <h1>PRISM<br><em>SHIFT</em></h1>
-            <p class="tagline">击穿光谱。点燃超驱。</p>
-            <div class="controls-preview">
-              <div><kbd>A</kbd><kbd>←</kbd><span>左翼</span></div>
-              <div><kbd>D</kbd><kbd>→</kbd><span>右翼</span></div>
-              <div class="wide"><kbd>SPACE</kbd><span>蓄力发射</span></div>
+        <div class="machine-body">
+          <div class="cabinet-rail rail-left" aria-hidden="true"><i></i><i></i><i></i><span>QUANTUM ARCADE</span></div>
+          <div class="cabinet-rail rail-right" aria-hidden="true"><i></i><i></i><i></i><span>WASM POWERED</span></div>
+          <div class="screen-label" aria-hidden="true"><span>HI-DYNAMIC PLAYFIELD</span><i>RUST CORE / ONLINE</i></div>
+
+          <div class="canvas-frame">
+            <canvas id="game" width="800" height="1200" aria-label="PRISM SHIFT 弹珠台"></canvas>
+            <div class="scanline" aria-hidden="true"></div>
+
+            <div id="intro" class="modal-layer is-open">
+              <div class="intro-card">
+                <p class="eyebrow"><span></span> INSERT COIN / READY <span></span></p>
+                <h1>PRISM<br><em>SHIFT</em></h1>
+                <p class="tagline">击穿光谱。点燃超驱。</p>
+                <div class="controls-preview">
+                  <div><kbd>A</kbd><kbd>←</kbd><span>左翼</span></div>
+                  <div><kbd>D</kbd><kbd>→</kbd><span>右翼</span></div>
+                  <div class="wide"><kbd>SPACE</kbd><span>蓄力发射</span></div>
+                </div>
+                <button id="startBtn" class="primary-btn" type="button">
+                  <span>投入代币 / 启动</span><i>↗</i>
+                </button>
+                <small>建议开启声音 · 支持键盘与触控</small>
+              </div>
             </div>
-            <button id="startBtn" class="primary-btn" type="button">
-              <span>启动序列</span><i>↗</i>
-            </button>
-            <small>建议开启声音 · 支持键盘与触控</small>
-          </div>
-        </div>
 
-        <div id="pauseLayer" class="modal-layer pause-layer">
-          <div class="pause-card">
-            <p>SESSION PAUSED</p><h2>时间已冻结</h2>
-            <button id="resumeBtn" class="primary-btn" type="button"><span>继续游戏</span><i>↗</i></button>
-          </div>
-        </div>
+            <div id="pauseLayer" class="modal-layer pause-layer">
+              <div class="pause-card">
+                <p>SESSION PAUSED</p><h2>时间已冻结</h2>
+                <button id="resumeBtn" class="primary-btn" type="button"><span>继续游戏</span><i>↗</i></button>
+              </div>
+            </div>
 
-        <div id="gameOverLayer" class="modal-layer gameover-layer">
-          <div class="pause-card">
-            <p>RUN COMPLETE</p><h2>光谱坍缩</h2>
-            <div class="final-score"><span>本局得分</span><strong id="finalScore">0</strong></div>
-            <button id="restartBtn" class="primary-btn" type="button"><span>再次挑战</span><i>↻</i></button>
+            <div id="gameOverLayer" class="modal-layer gameover-layer">
+              <div class="pause-card">
+                <p>RUN COMPLETE</p><h2>光谱坍缩</h2>
+                <div class="final-score"><span>本局得分</span><strong id="finalScore">0</strong></div>
+                <button id="restartBtn" class="primary-btn" type="button"><span>再次挑战</span><i>↻</i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="machine-console" aria-hidden="true">
+            <div class="console-copy"><span>CONTROL DECK</span><b>PX-07</b></div>
+            <div class="arcade-button pink"><i></i><span>LEFT</span></div>
+            <div class="coin-module"><i></i><b>25¢</b><span>INSERT COIN</span></div>
+            <div class="arcade-button cyan"><i></i><span>RIGHT</span></div>
+            <div class="plunger-module"><i></i><span>PLUNGER</span></div>
+          </div>
+
+          <div class="machine-lower" aria-hidden="true">
+            <div class="vent"><i></i><i></i><i></i><i></i><i></i></div>
+            <span>PRISM DYNAMICS</span><b><i></i> SYSTEM READY</b>
+            <div class="service-lock"></div>
           </div>
         </div>
       </div>
@@ -125,4 +154,3 @@
   <script type="module" src="game.js"></script>
 </body>
 </html>
-
