@@ -8,13 +8,15 @@ playfieldArt.src = new URL('assets/kingdom-playfield.webp', import.meta.url).hre
 const ui = {
   intro: document.querySelector('#intro'), pause: document.querySelector('#pauseLayer'), gameover: document.querySelector('#gameOverLayer'),
   start: document.querySelector('#startBtn'), resume: document.querySelector('#resumeBtn'), restart: document.querySelector('#restartBtn'),
-  pauseBtn: document.querySelector('#pauseBtn'), sound: document.querySelector('#soundBtn'), wasm: document.querySelector('#wasmStatus'),
+  pauseBtn: document.querySelector('#pauseBtn'), sound: document.querySelector('#soundBtn'), fullscreen: document.querySelector('#fullscreenBtn'), wasm: document.querySelector('#wasmStatus'),
   wake: document.querySelector('#wakeStatus'), backScore: document.querySelector('#backScore'), backBalls: document.querySelector('#backBalls'),
   score: document.querySelector('#scoreValue'), high: document.querySelector('#highScore'), lives: document.querySelector('#livesValue'),
   combo: document.querySelector('#comboValue'), energy: document.querySelector('#energyValue'), fill: document.querySelector('#energyFill'),
   driveHint: document.querySelector('#driveHint'), targets: document.querySelector('#targetProgress'), final: document.querySelector('#finalScore'),
   missionBumpers: document.querySelector('#missionBumpers'), missionTargets: document.querySelector('#missionTargets'), missionDrive: document.querySelector('#missionDrive')
 };
+const touchLaunchButton = document.querySelector('#touchLaunch');
+const phoneLayout = matchMedia('(max-width: 850px)');
 
 let wasm;
 let started = false;
@@ -22,6 +24,7 @@ let paused = true;
 let muted = false;
 let finishedShown = false;
 let lastTime = performance.now();
+let lastCanvasDraw = 0;
 let elapsed = 0;
 let screenShake = 0;
 let flash = 0;
@@ -414,15 +417,18 @@ function loop(now) {
     wasm.game_step(dt,keys.left?1:0,keys.right?1:0);processEvents();updateFx(dt);updateHud(dt);
   } else if(wasm) { updateFx(dt); }
   if(wasm && wasm.game_over() && !finishedShown){finishedShown=true;paused=true;ui.final.textContent=formatScore(wasm.game_score());setTimeout(()=>ui.gameover.classList.add('is-open'),450);}
-  drawFrame();requestAnimationFrame(loop);
+  if(touchLaunchButton)touchLaunchButton.style.setProperty('--charge',`${Math.round(charge*100)}%`);
+  if(!phoneLayout.matches||now-lastCanvasDraw>31){drawFrame();lastCanvasDraw=now;}requestAnimationFrame(loop);
 }
 
-function startGame(){ synth.init();requestWakeLock();started=true;paused=false;finishedShown=false;ui.intro.classList.remove('is-open');ui.gameover.classList.remove('is-open');lastTime=performance.now(); }
+function focusPlayfield(){if(!phoneLayout.matches)return;setTimeout(()=>document.querySelector('.canvas-frame')?.scrollIntoView({behavior:'smooth',block:'center'}),180);}
+async function toggleFullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch(_){}requestWakeLock();}
+function startGame(){ synth.init();requestWakeLock();started=true;paused=false;finishedShown=false;ui.intro.classList.remove('is-open');ui.gameover.classList.remove('is-open');lastTime=performance.now();focusPlayfield(); }
 function restartGame(){wasm.game_restart();trail.length=particles.length=rings.length=labels.length=0;startGame();}
 function setPause(value){if(!started||wasm.game_over())return;paused=value;if(!value)requestWakeLock();ui.pause.classList.toggle('is-open',paused);lastTime=performance.now();}
 function beginLaunch(){if(!wasm||paused||wasm.game_launched())return;launchHeld=true;launchStart=performance.now();charge=.05;}
 function endLaunch(){if(!launchHeld)return;launchHeld=false;if(!paused&&!wasm.game_launched())wasm.game_launch(Math.max(.28,charge));charge=0;}
-function setFlipper(side,value,el){keys[side]=value;if(el)el.classList.toggle('active',value);if(value&&!paused)synth.flip();}
+function setFlipper(side,value,el){keys[side]=value;if(el)el.classList.toggle('active',value);if(value&&!paused){synth.flip();if(el&&navigator.vibrate)navigator.vibrate(9);}}
 
 window.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&['Equal','Minus','Digit0','NumpadAdd','NumpadSubtract','Numpad0'].includes(e.code)){e.preventDefault();return;}
@@ -441,12 +447,13 @@ document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 let lastTouchEnd=0;document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<320)e.preventDefault();lastTouchEnd=now;},{passive:false});
 document.addEventListener('pointerdown',()=>{if(started)requestWakeLock();},{passive:true});
 ui.start.addEventListener('click',startGame);ui.resume.addEventListener('click',()=>setPause(false));ui.restart.addEventListener('click',restartGame);ui.pauseBtn.addEventListener('click',()=>setPause(!paused));
+ui.fullscreen?.addEventListener('click',toggleFullscreen);
 ui.sound.addEventListener('click',()=>{muted=!muted;ui.sound.classList.toggle('muted',muted);ui.sound.setAttribute('aria-label',muted?'开启声音':'关闭声音');if(!muted)synth.tone(560,.08,'sine',.025,220);});
 
 function bindHold(id,down,up){const el=document.querySelector(id);el.addEventListener('pointerdown',e=>{e.preventDefault();el.setPointerCapture(e.pointerId);down(el);});['pointerup','pointercancel','lostpointercapture'].forEach(type=>el.addEventListener(type,e=>{e.preventDefault();up(el);}));}
 bindHold('#touchLeft',el=>setFlipper('left',true,el),el=>setFlipper('left',false,el));
 bindHold('#touchRight',el=>setFlipper('right',true,el),el=>setFlipper('right',false,el));
-bindHold('#touchLaunch',el=>{el.classList.add('active');beginLaunch();},el=>{el.classList.remove('active');endLaunch();});
+bindHold('#touchLaunch',el=>{el.classList.add('active');beginLaunch();if(navigator.vibrate)navigator.vibrate(10);},el=>{el.classList.remove('active');endLaunch();if(navigator.vibrate)navigator.vibrate([8,18,12]);});
 
 loadWasm().catch(err=>{console.error(err);ui.wasm.textContent='WASM LOAD FAILED';document.querySelector('.live-dot').style.background='#ff4f87';});
 requestAnimationFrame(loop);

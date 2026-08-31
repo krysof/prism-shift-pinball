@@ -3,11 +3,13 @@ const ctx = canvas?.getContext('2d', { alpha: false });
 
 if (canvas && ctx) {
   const W = 1280, H = 720;
+  const mobile = matchMedia('(max-width: 850px)').matches;
+  if (mobile) { canvas.width = 640; canvas.height = 360; ctx.setTransform(.5, 0, 0, .5, 0, 0); }
   const art = new Image();
   art.decoding = 'async';
   art.src = new URL('assets/kingdom-backbox.webp', import.meta.url).href;
 
-  const sparks = Array.from({ length: 54 }, (_, i) => ({
+  const sparks = Array.from({ length: mobile ? 28 : 54 }, (_, i) => ({
     x: (i * 197.3) % W,
     y: (i * 83.7) % (H - 118),
     size: 1 + (i % 4) * .75,
@@ -21,6 +23,9 @@ if (canvas && ctx) {
   let shownScore = 0;
   let scorePulse = 0;
   let modePulse = 0;
+  let lastPaint = 0;
+  let visible = true;
+  new IntersectionObserver(entries => { visible = entries[0]?.isIntersecting ?? true; }, { rootMargin: '80px' }).observe(canvas);
 
   const fmt = value => Math.max(0, value | 0).toString().padStart(6, '0').replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
 
@@ -46,6 +51,8 @@ if (canvas && ctx) {
   }
 
   function draw(now) {
+    if (!visible || (mobile && now - lastPaint < 32)) { if (!visible) last = now; requestAnimationFrame(draw); return; }
+    lastPaint = now;
     const dt = Math.min(.05, (now - last) / 1000 || 0); last = now; t += dt;
     const s = window.__pinballState || {};
     const score = s.score || 0;
