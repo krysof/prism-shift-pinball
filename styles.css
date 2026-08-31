@@ -94,6 +94,11 @@ button { color: inherit; }
 }
 .canvas-frame:before { content: ""; position: absolute; inset: 6px; border-radius: 16px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.1), inset 0 0 30px rgba(0,0,0,.3); pointer-events: none; z-index: 4; }
 canvas { width: 100%; height: 100%; display: block; background: #070918; border-radius: 16px; touch-action: none; }
+#game, #scene3d { position:absolute; inset:6px; width:calc(100% - 12px); height:calc(100% - 12px); border-radius:9px; }
+#game { z-index:0; opacity:1; }
+#scene3d { z-index:1; opacity:0; transition:opacity .55s ease; background:#050914; }
+.webgl-ready #game { opacity:0; }
+.webgl-ready #scene3d { opacity:1; }
 .scanline { position: absolute; z-index: 2; inset: 7px; pointer-events: none; border-radius: 15px; overflow: hidden; opacity: .09; background: repeating-linear-gradient(to bottom, transparent 0 4px, rgba(255,255,255,.16) 5px, transparent 6px); mix-blend-mode: overlay; }
 .scanline:after { content: ""; position: absolute; height: 22%; left: 0; right: 0; background: linear-gradient(transparent, rgba(104,244,255,.14), transparent); animation: scan 7s linear infinite; }
 @keyframes scan { from { top: -25%; } to { top: 110%; } }

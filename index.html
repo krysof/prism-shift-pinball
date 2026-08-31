@@ -51,7 +51,8 @@
           <div class="screen-label" aria-hidden="true"><span>SUPER PLAYFIELD</span><i>RUST CORE / ONLINE</i></div>
 
           <div class="canvas-frame">
-            <canvas id="game" width="800" height="1200" aria-label="PRISM SHIFT 弹珠台"></canvas>
+            <canvas id="game" width="800" height="1200" aria-label="MARIO PINBALL 弹珠台"></canvas>
+            <canvas id="scene3d" aria-label="实时 3D 弹珠台画面"></canvas>
             <div class="scanline" aria-hidden="true"></div>
 
             <div id="intro" class="modal-layer is-open">
@@ -62,7 +63,7 @@
                 <div class="controls-preview">
                   <div><kbd>A</kbd><kbd>←</kbd><span>左翼</span></div>
                   <div><kbd>D</kbd><kbd>→</kbd><span>右翼</span></div>
-                  <div class="wide"><kbd>SPACE</kbd><span>蓄力发射</span></div>
+                  <div class="wide"><kbd>↓</kbd><kbd>SPACE</kbd><span>按住压杆 · 松开发射</span></div>
                 </div>
                 <button id="startBtn" class="primary-btn" type="button">
                   <span>投入代币 / 启动</span><i>↗</i>
@@ -140,7 +141,7 @@
       <section class="key-guide">
         <div><kbd>A</kbd><kbd>←</kbd><span>左翼</span></div>
         <div><kbd>D</kbd><kbd>→</kbd><span>右翼</span></div>
-        <div><kbd>SPACE</kbd><span>蓄力发射</span></div>
+        <div><kbd>↓</kbd><kbd>SPACE</kbd><span>按住压杆 · 松开发射</span></div>
       </section>
 
       <div class="panel-footer">
@@ -156,5 +157,6 @@
   </footer>
 
   <script type="module" src="game.js"></script>
+  <script type="module" src="scene3d.js"></script>
 </body>
 </html>
