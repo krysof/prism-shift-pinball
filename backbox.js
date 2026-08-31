@@ -126,7 +126,7 @@ if (canvas && ctx) {
     ctx.font = '900 35px Manrope, sans-serif'; ctx.fillStyle = '#f4f4ef'; ctx.letterSpacing = '1px';
     ctx.fillText(mode, 76, panelY + 73);
     ctx.font = '600 12px DM Mono, monospace'; ctx.fillStyle = accent; ctx.letterSpacing = '3px';
-    ctx.fillText(drive > 0 ? `${drive.toFixed(1)} SEC  /  ALL SHOTS ×3` : 'SHOOT CASTLE  •  COMPLETE M-A-R-I-O  •  LOCK 3 BALLS', 77, panelY + 104);
+    ctx.fillText(drive > 0 ? `${drive.toFixed(1)} SEC  /  ALL SHOTS ×3` : s.ballSave > 0 ? `BALL SAVE ${s.ballSave.toFixed(1)} SEC  •  SHOOT CASTLE  •  LOCK 3 BALLS` : 'SHOOT CASTLE  •  COMPLETE M-A-R-I-O  •  LOCK 3 BALLS', 77, panelY + 104);
     if (s.charge > 0) { ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(77, panelY + 116, 420, 4); const cg = ctx.createLinearGradient(77, 0, 497, 0); cg.addColorStop(0, '#e93a42'); cg.addColorStop(.55, '#ffc43c'); cg.addColorStop(1, '#fff1a0'); ctx.fillStyle = cg; ctx.shadowColor = '#ffbd38'; ctx.shadowBlur = 8; ctx.fillRect(77, panelY + 116, 420 * s.charge, 4); ctx.shadowBlur = 0; }
 
     ctx.textAlign = 'right'; ctx.font = `800 ${44 + scorePulse * 5}px DM Mono, monospace`;

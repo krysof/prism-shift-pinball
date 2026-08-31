@@ -376,13 +376,14 @@ function processEvents() {
     if(kind===5){spawnBurst(x,y,'#58df66',15,220);addLabel(x,y-28,`+${value}`,'#ffd83d',value>1000);synth.target();ui.missionTargets.classList.add('flash');setTimeout(()=>ui.missionTargets.classList.remove('flash'),240);}
     if(kind===6){for(let j=0;j<7;j++)setTimeout(()=>spawnRing(400,575,['#ef3340','#ffd83d','#2b8cff','#58df66'][j%4],j*22),j*35);addLabel(400,650,'STAR POWER ×3','#ffd83d',true);screenShake=14;flash=.9;synth.drive();ui.missionDrive.classList.add('flash');setTimeout(()=>ui.missionDrive.classList.remove('flash'),600);}
     if(kind===7){spawnBurst(x,y,'#ffd83d',25,270);screenShake=5;synth.launch();}
+    if(kind===8){spawnBurst(x,y,'#58df66',32,290);spawnRing(x,y,'#58df66',34);addLabel(400,940,'BALL SAVE · SHOOT AGAIN','#fff4a8',true);screenShake=6;flash=.35;synth.target();}
   }
 }
 
 function drawFrame() {
   if(!wasm) return;
   const x=wasm.ball_x(),y=wasm.ball_y(),vx=wasm.ball_vx(),vy=wasm.ball_vy(),drive=wasm.game_overdrive(),mask=wasm.game_target_mask();
-  window.__pinballState={x,y,vx,vy,drive,mask,charge,leftAngle:wasm.left_angle(),rightAngle:wasm.right_angle(),launched:!!wasm.game_launched(),score:wasm.game_score(),lives:wasm.game_lives(),combo:wasm.game_combo(),energy:wasm.game_energy(),started,paused};
+  window.__pinballState={x,y,vx,vy,drive,mask,charge,leftAngle:wasm.left_angle(),rightAngle:wasm.right_angle(),launched:!!wasm.game_launched(),score:wasm.game_score(),lives:wasm.game_lives(),combo:wasm.game_combo(),energy:wasm.game_energy(),ballSave:wasm.game_ball_save(),started,paused};
   ctx.save(); if(screenShake>0) ctx.translate((Math.random()-.5)*screenShake,(Math.random()-.5)*screenShake);
   drawMarioBackdrop(drive); drawMarioDetails(drive);
   if(!window.__use3d){
