@@ -402,7 +402,10 @@ footer kbd { margin-left: 5px; min-width: 19px; height: 18px; font-size: 8px; }
 
 /* Phone-first fit: keep both LCDs fully inside the viewport and maximize usable playfield width. */
 @media (max-width: 850px) {
-  body { overscroll-behavior-x: none; }
+  body {
+    overscroll-behavior-x: none;
+    padding-bottom: calc(var(--browser-ui-bottom, 0px) + var(--mobile-control-size, 70px) + max(14px, env(safe-area-inset-bottom)));
+  }
   .game-shell { width: 100%; margin: 10px 0 22px; padding: 0; }
   .table-stage { width: 100%; overflow: hidden; }
   .arcade-machine { width: min(100%, 560px); max-width: 100%; }
@@ -410,15 +413,20 @@ footer kbd { margin-left: 5px; min-width: 19px; height: 18px; font-size: 8px; }
   .machine-body { width: 100%; padding-left: 20px; padding-right: 20px; }
   .cabinet-rail { width: 13px; }
   .rail-left { left: 2px; } .rail-right { right: 2px; }
-  .canvas-frame { width: 100%; aspect-ratio: 2/3; border-radius: 10px; padding: 4px; }
+  .canvas-frame { width: min(100%, var(--mobile-playfield-width, 100%)); aspect-ratio: 2/3; border-radius: 10px; padding: 4px; }
   #game, #scene3d { inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); }
   .canvas-frame:before { inset: 4px; border-radius: 7px; }
   .scanline { inset: 5px; border-radius: 7px; }
   .machine-console { width: calc(100% + 20px); margin-top: 13px; }
   .machine-lower { width: calc(100% + 14px); }
-  .touch-controls { grid-template-columns: 1fr 74px 1fr; gap: 8px; left: 8px; right: 8px; bottom: max(8px, env(safe-area-inset-bottom)); }
-  .touch-controls button { height: 70px; border-radius: 15px; background: rgba(5,8,15,.9); border-color: rgba(255,255,255,.18); }
-  .touch-controls .launch-touch { position:relative; isolation:isolate; width: 70px; height: 70px; justify-self: center; background: conic-gradient(#ef3340 var(--charge, 0%),rgba(10,13,23,.94) 0); border: 3px solid rgba(255,216,61,.52); }
+  .touch-controls {
+    z-index: 50;
+    grid-template-columns: 1fr var(--mobile-control-size, 70px) 1fr;
+    gap: 8px; left: 8px; right: 8px;
+    bottom: calc(var(--browser-ui-bottom, 0px) + max(8px, env(safe-area-inset-bottom)));
+  }
+  .touch-controls button { height: var(--mobile-control-size, 70px); border-radius: 15px; background: rgba(5,8,15,.9); border-color: rgba(255,255,255,.18); }
+  .touch-controls .launch-touch { position:relative; isolation:isolate; width: var(--mobile-control-size, 70px); height: var(--mobile-control-size, 70px); justify-self: center; background: conic-gradient(#ef3340 var(--charge, 0%),rgba(10,13,23,.94) 0); border: 3px solid rgba(255,216,61,.52); }
   .touch-controls .launch-touch:before { content:""; position:absolute; inset:7px; z-index:-1; border-radius:50%; background:#090c16; }
   .touch-controls b { font-size: 16px; }
   .touch-controls span { font-size: 10px; }

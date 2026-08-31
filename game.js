@@ -16,7 +16,52 @@ const ui = {
   missionBumpers: document.querySelector('#missionBumpers'), missionTargets: document.querySelector('#missionTargets'), missionDrive: document.querySelector('#missionDrive')
 };
 const touchLaunchButton = document.querySelector('#touchLaunch');
+const touchControls = document.querySelector('.touch-controls');
 const phoneLayout = matchMedia('(max-width: 850px)');
+let viewportSyncFrame = 0;
+
+function syncMobileViewport() {
+  viewportSyncFrame = 0;
+  const root = document.documentElement;
+  if (!phoneLayout.matches) {
+    ['--browser-ui-bottom','--mobile-control-size','--mobile-playfield-width','--visual-viewport-height'].forEach(name=>root.style.removeProperty(name));
+    return;
+  }
+  const vv = window.visualViewport;
+  const visibleWidth = vv?.width || innerWidth;
+  const visibleHeight = vv?.height || innerHeight;
+  const offsetTop = vv?.offsetTop || 0;
+  const layoutHeight = Math.max(document.documentElement.clientHeight, innerHeight);
+  const layoutGap = Math.max(0, layoutHeight - visibleHeight - offsetTop);
+  const screenGap = Math.max(0, (screen.height || layoutHeight) - visibleHeight - offsetTop);
+  const inferredBrowserBar = document.fullscreenElement ? 0 : (layoutGap > 1 ? layoutGap : Math.min(96, screenGap));
+  const controlSize = Math.round(Math.max(58, Math.min(72, Math.min(visibleWidth * .19, visibleHeight * .105))));
+  root.style.setProperty('--browser-ui-bottom', `${Math.round(inferredBrowserBar)}px`);
+  root.style.setProperty('--mobile-control-size', `${controlSize}px`);
+  root.style.setProperty('--visual-viewport-height', `${Math.round(visibleHeight)}px`);
+
+  // Leave a real, measured corridor above the browser chrome for the controls.
+  // On browsers that overlay their URL bar, visualViewport alone can still report
+  // a taller CSS viewport, so the inferred bar has to participate in the scale.
+  // Reading the resolved bottom also includes the device safe-area inset.
+  const resolvedControlBottom = parseFloat(getComputedStyle(touchControls).bottom) || inferredBrowserBar + 8;
+  const widthLimit = Math.max(180, visibleWidth - 28);
+  const heightLimit = Math.max(160, (visibleHeight - resolvedControlBottom - controlSize - 20) * 2 / 3);
+  const playfieldWidth = Math.min(widthLimit, heightLimit);
+  root.style.setProperty('--mobile-playfield-width', `${Math.round(playfieldWidth)}px`);
+}
+
+function scheduleViewportSync() {
+  if (!viewportSyncFrame) viewportSyncFrame = requestAnimationFrame(syncMobileViewport);
+}
+
+syncMobileViewport();
+window.addEventListener('resize', scheduleViewportSync, {passive:true});
+window.addEventListener('orientationchange', scheduleViewportSync, {passive:true});
+window.addEventListener('scroll', scheduleViewportSync, {passive:true});
+window.visualViewport?.addEventListener('resize', scheduleViewportSync, {passive:true});
+window.visualViewport?.addEventListener('scroll', scheduleViewportSync, {passive:true});
+document.addEventListener('fullscreenchange', scheduleViewportSync);
 
 let wasm;
 let started = false;
@@ -422,7 +467,7 @@ function loop(now) {
   if(!phoneLayout.matches||now-lastCanvasDraw>31){drawFrame();lastCanvasDraw=now;}requestAnimationFrame(loop);
 }
 
-function focusPlayfield(){if(!phoneLayout.matches)return;setTimeout(()=>document.querySelector('.canvas-frame')?.scrollIntoView({behavior:'smooth',block:'center'}),180);}
+function focusPlayfield(){if(!phoneLayout.matches)return;syncMobileViewport();setTimeout(()=>{const frame=document.querySelector('.canvas-frame');if(!frame)return;const vv=window.visualViewport;const controlsTop=touchControls?.getBoundingClientRect().top||(vv?.height||innerHeight);const rect=frame.getBoundingClientRect();const pageTop=scrollY+rect.top;const topGap=Math.max(8,(controlsTop-rect.height-16)/2)+(vv?.offsetTop||0);scrollTo({top:Math.max(0,pageTop-topGap),behavior:'smooth'});},180);}
 async function toggleFullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch(_){}requestWakeLock();}
 function startGame(){ synth.init();requestWakeLock();started=true;paused=false;finishedShown=false;ui.intro.classList.remove('is-open');ui.gameover.classList.remove('is-open');lastTime=performance.now();focusPlayfield(); }
 function restartGame(){wasm.game_restart();trail.length=particles.length=rings.length=labels.length=0;startGame();}
