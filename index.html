@@ -35,14 +35,18 @@
     <section class="table-stage" aria-label="弹珠台游戏区域">
       <div class="stage-lights" aria-hidden="true"></div>
       <div class="arcade-machine">
-        <div class="machine-crown" aria-hidden="true">
+        <div class="machine-crown">
           <span class="crown-bolt left"></span><span class="crown-bolt right"></span>
-          <div class="marquee-kicker"><i></i> MUSHROOM KINGDOM / WORLD 1-P <i></i></div>
-          <div class="marquee-title"><span>MARIO</span><b>PINBALL</b></div>
-          <div class="marquee-sub"><span>SUPER ARCADE SYSTEM</span><em>1—4 PLAYER</em></div>
-          <div class="backbox-speaker speaker-left"><i></i></div>
-          <div class="backbox-speaker speaker-right"><i></i></div>
-          <div class="backbox-score"><span>PLAYER 1</span><strong id="backScore">000 000</strong><em id="backBalls">● ● ●</em></div>
+          <div class="backbox-screen" aria-label="动态高清背板画面">
+            <canvas id="backboxCanvas" width="1280" height="720"></canvas>
+            <div class="backbox-reflection" aria-hidden="true"></div>
+            <span class="screen-chip">27″ HD / LIVE</span>
+          </div>
+          <div class="backbox-deck" aria-hidden="true">
+            <div class="backbox-speaker speaker-left"><i></i></div>
+            <div class="backbox-score"><span>PLAYER 1</span><strong id="backScore">000 000</strong><em id="backBalls">● ● ●</em></div>
+            <div class="backbox-speaker speaker-right"><i></i></div>
+          </div>
         </div>
 
         <div class="machine-body">
@@ -156,7 +160,8 @@
     <span>60 FPS QUANTUM PHYSICS</span>
   </footer>
 
-  <script type="module" src="game.js?v=3.1"></script>
-  <script type="module" src="scene3d.js?v=3.1"></script>
+  <script type="module" src="game.js?v=4.0"></script>
+  <script type="module" src="backbox.js?v=4.0"></script>
+  <script type="module" src="scene3d.js?v=4.0"></script>
 </body>
 </html>

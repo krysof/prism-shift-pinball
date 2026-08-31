@@ -1,6 +1,9 @@
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d', { alpha: false });
 const W = 800, H = 1200;
+const playfieldArt = new Image();
+playfieldArt.decoding = 'async';
+playfieldArt.src = new URL('assets/kingdom-playfield.webp', import.meta.url).href;
 
 const ui = {
   intro: document.querySelector('#intro'), pause: document.querySelector('#pauseLayer'), gameover: document.querySelector('#gameOverLayer'),
@@ -313,18 +316,11 @@ function drawCloud(x,y,s=1){
 }
 
 function drawMarioBackdrop(drive){
-  const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,drive>0?'#6358dd':'#188bea');sky.addColorStop(.58,drive>0?'#df4b92':'#58c5f5');sky.addColorStop(1,'#143476');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
-  ctx.save();ctx.globalAlpha=.2;ctx.strokeStyle='#fff';ctx.lineWidth=2;for(let y=80;y<920;y+=70){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}ctx.restore();
-  drawCloud(165,190,.85);drawCloud(590,245,.65);drawCloud(405,615,.48);
-  // Layered Mushroom Kingdom hills.
-  ctx.fillStyle='rgba(24,112,65,.46)';ctx.beginPath();ctx.moveTo(0,560);ctx.quadraticCurveTo(140,330,275,560);ctx.quadraticCurveTo(440,310,650,560);ctx.quadraticCurveTo(730,420,800,550);ctx.lineTo(800,850);ctx.lineTo(0,850);ctx.closePath();ctx.fill();
-  ctx.fillStyle='rgba(44,177,80,.3)';for(const [x,y] of [[140,470],[500,455],[670,505]]){ctx.beginPath();ctx.ellipse(x,y,18,38,0,0,Math.PI*2);ctx.fill();}
-  // Floating brick platforms.
-  for(const row of [[95,680,5],[510,645,4],[245,820,5]]){for(let i=0;i<row[2];i++){const x=row[0]+i*32,y=row[1];ctx.fillStyle=i===1?'#ffd83d':'#b85d31';ctx.fillRect(x,y,29,27);ctx.strokeStyle='#5d291b';ctx.lineWidth=2;ctx.strokeRect(x,y,29,27);ctx.fillStyle='rgba(255,255,255,.16)';ctx.fillRect(x+3,y+3,22,3);if(i===1){ctx.fillStyle='#7e4d00';ctx.font='800 18px Manrope';ctx.textAlign='center';ctx.fillText('?',x+15,y+21);}}}
-  // Brick floor.
-  ctx.fillStyle='#9d482b';ctx.fillRect(0,1094,W,106);ctx.strokeStyle='#54251c';ctx.lineWidth=3;for(let y=1094;y<1200;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();for(let x=(y/28%2)*30;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+28);ctx.stroke();}}
-  ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='800 12px "DM Mono",monospace';ctx.textAlign='left';ctx.fillText('MUSHROOM KINGDOM',78,118);ctx.textAlign='right';ctx.fillText('WORLD 1-P',718,118);
-  ctx.fillStyle='#ffd83d';ctx.font='800 9px "DM Mono",monospace';ctx.textAlign='center';ctx.fillText('GET READY!  •  COLLECT COINS  •  FIND THE STAR',400,1164);
+  if(playfieldArt.complete&&playfieldArt.naturalWidth){ctx.drawImage(playfieldArt,0,0,W,H);}
+  else {const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#16344b');sky.addColorStop(.45,'#256b76');sky.addColorStop(1,'#17130f');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);}
+  // Printed-glass depth treatment. The generated collector art remains readable without the old flat cartoon backdrop.
+  const vignette=ctx.createRadialGradient(400,570,180,400,580,710);vignette.addColorStop(.35,'rgba(2,4,7,0)');vignette.addColorStop(1,'rgba(2,4,7,.48)');ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
+  if(drive>0){ctx.save();ctx.globalCompositeOperation='screen';const g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,'rgba(239,51,64,.12)');g.addColorStop(.5,'rgba(255,216,61,.11)');g.addColorStop(1,'rgba(43,140,255,.13)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.restore();}
 }
 
 function drawMarioCabinet(drive){
@@ -360,11 +356,11 @@ function drawMarioBall(x,y,vx,vy){trail.unshift({x,y});if(trail.length>17)trail.
 function drawMarioLauncher(power,ready){ctx.save();ctx.fillStyle='#124c29';ctx.fillRect(690,970,42,155);ctx.fillStyle='#32b951';ctx.fillRect(695,970,32,155);const h=ready?30+power*105:18;ctx.fillStyle='#ffd83d';ctx.shadowColor='#ffd83d';ctx.shadowBlur=12;ctx.fillRect(701,1115-h,20,h);ctx.strokeStyle='#fff2a5';ctx.lineWidth=2;ctx.strokeRect(701,990,20,125);ctx.fillStyle='#fff';ctx.font='800 8px "DM Mono",monospace';ctx.textAlign='center';ctx.fillText(ready?'POWER':'LOCK',711,1141);ctx.restore();}
 
 function drawMarioDetails(drive){
-  // Coin lane across the center.
-  for(let i=0;i<5;i++){const x=320+i*40,y=738-Math.abs(2-i)*9;ctx.save();ctx.translate(x,y);ctx.scale(.45,1);ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fillStyle=drive>0?'#fff':'#ffd83d';ctx.strokeStyle='#a96400';ctx.lineWidth=3;ctx.shadowColor='#ffd83d';ctx.shadowBlur=10;ctx.fill();ctx.stroke();ctx.restore();}
-  ctx.fillStyle='#fff';ctx.font='800 8px "DM Mono",monospace';ctx.textAlign='center';ctx.fillText('C O I N   R O A D',400,780);
-  // Upper lane signs.
-  ['M','A','R','I','O'].forEach((ch,i)=>{const x=290+i*55;ctx.fillStyle=i%2?'#2b8cff':'#ef3340';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(x-17,142,34,23,5);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.font='900 12px Manrope';ctx.fillText(ch,x,158);});
+  // Collector-style printed inserts: restrained, crisp and legible under the 3D hardware.
+  const lamps=[[312,742],[356,720],[400,712],[444,720],[488,742]];
+  lamps.forEach(([x,y],i)=>{ctx.save();ctx.translate(x,y);ctx.scale(.56,1);ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fillStyle=drive>0?'#fff2ae':'rgba(255,195,45,.54)';ctx.strokeStyle='rgba(255,233,143,.85)';ctx.lineWidth=2;ctx.shadowColor='#f6a619';ctx.shadowBlur=drive>0?14:5;ctx.fill();ctx.stroke();ctx.restore();});
+  ctx.fillStyle='rgba(255,244,207,.86)';ctx.font='800 8px "DM Mono",monospace';ctx.textAlign='center';ctx.fillText('ROYAL COIN LOCK',400,777);
+  ['M','A','R','I','O'].forEach((ch,i)=>{const x=290+i*55;ctx.fillStyle=i%2?'rgba(43,140,255,.8)':'rgba(239,51,64,.8)';ctx.strokeStyle='rgba(255,244,202,.86)';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x-16,142,32,21,5);ctx.fill();ctx.stroke();ctx.fillStyle='#fff9e9';ctx.font='900 11px Manrope';ctx.fillText(ch,x,157);});
 }
 
 function processEvents() {
@@ -383,7 +379,7 @@ function processEvents() {
 function drawFrame() {
   if(!wasm) return;
   const x=wasm.ball_x(),y=wasm.ball_y(),vx=wasm.ball_vx(),vy=wasm.ball_vy(),drive=wasm.game_overdrive(),mask=wasm.game_target_mask();
-  window.__pinballState={x,y,vx,vy,drive,mask,charge,leftAngle:wasm.left_angle(),rightAngle:wasm.right_angle(),launched:!!wasm.game_launched()};
+  window.__pinballState={x,y,vx,vy,drive,mask,charge,leftAngle:wasm.left_angle(),rightAngle:wasm.right_angle(),launched:!!wasm.game_launched(),score:wasm.game_score(),lives:wasm.game_lives(),combo:wasm.game_combo(),energy:wasm.game_energy(),started,paused};
   ctx.save(); if(screenShake>0) ctx.translate((Math.random()-.5)*screenShake,(Math.random()-.5)*screenShake);
   drawMarioBackdrop(drive); drawMarioDetails(drive);
   if(!window.__use3d){
