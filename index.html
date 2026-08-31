@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#060813">
+  <meta name="description" content="PRISM SHIFT — 由 WebAssembly 驱动的次世代霓虹弹珠台">
+  <title>PRISM SHIFT // WASM Pinball</title>
+  <link rel="icon" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="noise" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="PRISM SHIFT 首页">
+      <span class="brand-mark"><i></i></span>
+      <span>PRISM <b>SHIFT</b></span>
+    </a>
+    <div class="top-meta">
+      <span class="live-dot"></span>
+      <span id="wasmStatus">WASM INITIALIZING</span>
+      <button id="soundBtn" class="icon-btn" type="button" aria-label="切换声音" title="声音">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5-.5a5 5 0 0 1 0 7M19 6a8 8 0 0 1 0 12"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="game-shell">
+    <section class="table-stage" aria-label="弹珠台游戏区域">
+      <div class="stage-lights" aria-hidden="true"></div>
+      <div class="canvas-frame">
+        <canvas id="game" width="800" height="1200" aria-label="PRISM SHIFT 弹珠台"></canvas>
+        <div class="scanline" aria-hidden="true"></div>
+
+        <div id="intro" class="modal-layer is-open">
+          <div class="intro-card">
+            <p class="eyebrow"><span></span> QUANTUM ARCADE / 07</p>
+            <h1>PRISM<br><em>SHIFT</em></h1>
+            <p class="tagline">击穿光谱。点燃超驱。</p>
+            <div class="controls-preview">
+              <div><kbd>A</kbd><kbd>←</kbd><span>左翼</span></div>
+              <div><kbd>D</kbd><kbd>→</kbd><span>右翼</span></div>
+              <div class="wide"><kbd>SPACE</kbd><span>蓄力发射</span></div>
+            </div>
+            <button id="startBtn" class="primary-btn" type="button">
+              <span>启动序列</span><i>↗</i>
+            </button>
+            <small>建议开启声音 · 支持键盘与触控</small>
+          </div>
+        </div>
+
+        <div id="pauseLayer" class="modal-layer pause-layer">
+          <div class="pause-card">
+            <p>SESSION PAUSED</p><h2>时间已冻结</h2>
+            <button id="resumeBtn" class="primary-btn" type="button"><span>继续游戏</span><i>↗</i></button>
+          </div>
+        </div>
+
+        <div id="gameOverLayer" class="modal-layer gameover-layer">
+          <div class="pause-card">
+            <p>RUN COMPLETE</p><h2>光谱坍缩</h2>
+            <div class="final-score"><span>本局得分</span><strong id="finalScore">0</strong></div>
+            <button id="restartBtn" class="primary-btn" type="button"><span>再次挑战</span><i>↻</i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="touch-controls" aria-label="触控操作">
+        <button id="touchLeft" type="button"><b>L</b><span>左翼</span></button>
+        <button id="touchLaunch" class="launch-touch" type="button"><b>●</b><span>发射</span></button>
+        <button id="touchRight" type="button"><b>R</b><span>右翼</span></button>
+      </div>
+    </section>
+
+    <aside class="hud-panel">
+      <section class="score-block">
+        <div class="section-label"><span>SCORE</span><i>LIVE</i></div>
+        <strong id="scoreValue">000 000</strong>
+        <div class="high-row"><span>PERSONAL BEST</span><b id="highScore">000 000</b></div>
+      </section>
+
+      <section class="status-grid">
+        <div><span>BALLS</span><strong id="livesValue">● ● ●</strong></div>
+        <div><span>MULTI</span><strong id="comboValue">×01</strong></div>
+      </section>
+
+      <section class="energy-block">
+        <div class="section-label"><span>PRISM DRIVE</span><b id="energyValue">0%</b></div>
+        <div class="energy-track"><i id="energyFill"></i><em></em></div>
+        <p id="driveHint">命中目标以填充超驱核心</p>
+      </section>
+
+      <section class="mission-block">
+        <div class="section-label"><span>ACTIVE PROTOCOLS</span><b>03</b></div>
+        <ul>
+          <li id="missionBumpers"><i>01</i><div><strong>共振连击</strong><span>连续撞击增幅器</span></div><em>+SYNC</em></li>
+          <li id="missionTargets"><i>02</i><div><strong>光谱收集</strong><span>点亮六枚棱镜靶</span></div><em id="targetProgress">0/6</em></li>
+          <li id="missionDrive"><i>03</i><div><strong>超驱模式</strong><span>充满 PRISM DRIVE</span></div><em>×3</em></li>
+        </ul>
+      </section>
+
+      <section class="key-guide">
+        <div><kbd>A</kbd><kbd>←</kbd><span>左翼</span></div>
+        <div><kbd>D</kbd><kbd>→</kbd><span>右翼</span></div>
+        <div><kbd>SPACE</kbd><span>蓄力发射</span></div>
+      </section>
+
+      <div class="panel-footer">
+        <span>PHYSICS</span><b>RUST / WASM</b><i></i><span>BUILD</span><b>1.0.0</b>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <span>© 2088 PRISM DYNAMICS</span>
+    <button id="pauseBtn" type="button">PAUSE <kbd>P</kbd></button>
+    <span>60 FPS QUANTUM PHYSICS</span>
+  </footer>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
+
