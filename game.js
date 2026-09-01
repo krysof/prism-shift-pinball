@@ -138,7 +138,7 @@ async function requestWakeLock() {
 }
 
 async function loadWasm() {
-  const url = new URL('game.wasm', import.meta.url);
+  const url = new URL('game.wasm?v=5.0', import.meta.url);
   let instance;
   try {
     if (WebAssembly.instantiateStreaming) {
@@ -427,8 +427,8 @@ function processEvents() {
 
 function drawFrame() {
   if(!wasm) return;
-  const x=wasm.ball_x(),y=wasm.ball_y(),vx=wasm.ball_vx(),vy=wasm.ball_vy(),drive=wasm.game_overdrive(),mask=wasm.game_target_mask();
-  window.__pinballState={x,y,vx,vy,drive,mask,charge,leftAngle:wasm.left_angle(),rightAngle:wasm.right_angle(),launched:!!wasm.game_launched(),score:wasm.game_score(),lives:wasm.game_lives(),combo:wasm.game_combo(),energy:wasm.game_energy(),ballSave:wasm.game_ball_save(),started,paused};
+  const x=wasm.ball_x(),y=wasm.ball_y(),height=wasm.ball_height?.()||0,vx=wasm.ball_vx(),vy=wasm.ball_vy(),drive=wasm.game_overdrive(),mask=wasm.game_target_mask();
+  window.__pinballState={x,y,height,vx,vy,drive,mask,charge,leftAngle:wasm.left_angle(),rightAngle:wasm.right_angle(),launched:!!wasm.game_launched(),score:wasm.game_score(),lives:wasm.game_lives(),combo:wasm.game_combo(),energy:wasm.game_energy(),ballSave:wasm.game_ball_save(),started,paused};
   ctx.save(); if(screenShake>0) ctx.translate((Math.random()-.5)*screenShake,(Math.random()-.5)*screenShake);
   drawMarioBackdrop(drive); drawMarioDetails(drive);
   if(!window.__use3d){
