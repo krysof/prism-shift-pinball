@@ -173,7 +173,7 @@ async function requestWakeLock() {
 }
 
 async function loadWasm() {
-  const url = new URL('game.wasm?v=5.1', import.meta.url);
+  const url = new URL('game.wasm?v=5.2', import.meta.url);
   let instance;
   try {
     if (WebAssembly.instantiateStreaming) {
@@ -450,6 +450,7 @@ function processEvents() {
   const n=wasm.event_count();
   for(let i=0;i<n;i++){
     const kind=wasm.event_kind(i),x=wasm.event_x(i),y=wasm.event_y(i),value=wasm.event_value(i);
+    if(kind!==3)window.dispatchEvent(new CustomEvent('pinball-score-flash',{detail:{kind,x,y,value,score:wasm.game_score(),combo:wasm.game_combo()}}));
     if(kind===1){spawnBurst(x,y,i%2?'#ffd83d':'#ef3340',22,320);spawnRing(x,y,'#ffd83d');addLabel(x,y-42,`COIN +${value}`,'#fff');screenShake=6;flash=.18;synth.impact();ui.missionBumpers.classList.add('flash');setTimeout(()=>ui.missionBumpers.classList.remove('flash'),220);}
     if(kind===3){spawnBurst(x,y,'#ffd83d',7,150);synth.flip();}
     if(kind===4){spawnBurst(x,y,'#ef3340',34,330);spawnRing(x,y,'#ef3340',30);screenShake=11;synth.drain();}
@@ -508,7 +509,7 @@ function startGame(){ synth.init();requestWakeLock();started=true;paused=false;f
 function restartGame(){wasm.game_restart();trail.length=particles.length=rings.length=labels.length=0;startGame();}
 function setPause(value){if(!started||wasm.game_over())return;paused=value;if(!value)requestWakeLock();ui.pause.classList.toggle('is-open',paused);lastTime=performance.now();}
 function beginLaunch(){if(!wasm||paused||wasm.game_launched())return;launchHeld=true;launchStart=performance.now();charge=.05;}
-function endLaunch(){if(!launchHeld)return;launchHeld=false;if(!paused&&!wasm.game_launched())wasm.game_launch(Math.max(.28,charge));charge=0;}
+function endLaunch(){if(!launchHeld)return;launchHeld=false;if(!paused&&!wasm.game_launched()){wasm.game_launch(Math.max(.28,charge));processEvents();}charge=0;}
 function setFlipper(side,value,el){keys[side]=value;if(el)el.classList.toggle('active',value);if(value&&!paused){synth.flip();if(el&&navigator.vibrate)navigator.vibrate(9);}}
 
 window.addEventListener('keydown',e=>{

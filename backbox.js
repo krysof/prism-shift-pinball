@@ -23,11 +23,26 @@ if (canvas && ctx) {
   let shownScore = 0;
   let scorePulse = 0;
   let modePulse = 0;
+  let scoreCallout = { ttl: 0, max: 1, text: '', sub: '', color: '#ffd24a', kind: 0, x: W * .5, y: H * .46 };
   let lastPaint = 0;
   let visible = true;
   new IntersectionObserver(entries => { visible = entries[0]?.isIntersecting ?? true; }, { rootMargin: '80px' }).observe(canvas);
 
   const fmt = value => Math.max(0, value | 0).toString().padStart(6, '0').replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+
+  window.addEventListener('pinball-score-flash', event => {
+    const d = event.detail || {}, kind = Number(d.kind) || 0, value = Number(d.value) || 0;
+    const map = {
+      1: ['BUMPER HIT', `+${value}  •  COMBO X${Math.max(1, Number(d.combo) || 1)}`, '#ffd24a', .82],
+      4: ['BALL DRAIN', 'RETURN TO PLUNGER', '#ff3b4d', .95],
+      5: [value >= 1000 ? 'CASTLE JACKPOT' : 'TARGET BANK', `+${value}`, value >= 1000 ? '#ffe05c' : '#63ed78', value >= 1000 ? 1.45 : .9],
+      6: ['STAR POWER', 'ALL SHOTS X3', '#fff06a', 1.65],
+      7: ['LAUNCH LANE', 'SKILL SHOT ARMED', '#ffd24a', .72],
+      8: ['BALL SAVE', 'SHOOT AGAIN', '#63ed78', 1.15]
+    };
+    const item = map[kind]; if (!item) return;
+    scoreCallout = { ttl: item[3], max: item[3], text: item[0], sub: item[1], color: item[2], kind, x: 170 + Math.max(0, Math.min(800, Number(d.x) || 400)) / 800 * 940, y: 205 + Math.max(0, Math.min(1200, Number(d.y) || 600)) / 1200 * 225 };
+  });
 
   function roundRect(x, y, w, h, r) {
     ctx.beginPath();
@@ -59,6 +74,7 @@ if (canvas && ctx) {
     if (score !== shownScore) { shownScore = score; scorePulse = 1; modePulse = 1; }
     scorePulse = Math.max(0, scorePulse - dt * 2.4);
     modePulse = Math.max(0, modePulse - dt * 1.25);
+    scoreCallout.ttl = Math.max(0, scoreCallout.ttl - dt);
 
     ctx.fillStyle = '#05070b'; ctx.fillRect(0, 0, W, H);
     if (art.complete && art.naturalWidth) {
@@ -84,6 +100,18 @@ if (canvas && ctx) {
     sideShade.addColorStop(.35, 'rgba(0,0,0,0)'); sideShade.addColorStop(1, 'rgba(0,0,0,.48)');
     ctx.fillStyle = sideShade; ctx.fillRect(0, 0, W, H);
 
+    if (scoreCallout.ttl > 0) {
+      const life = scoreCallout.ttl / scoreCallout.max, attack = Math.min(1, (1 - life) * 10), alpha = life * attack;
+      ctx.save(); ctx.globalCompositeOperation = 'screen';
+      const burst = ctx.createRadialGradient(scoreCallout.x, scoreCallout.y, 6, scoreCallout.x, scoreCallout.y, 310);
+      burst.addColorStop(0, `${scoreCallout.color}${Math.round(alpha * 74).toString(16).padStart(2, '0')}`); burst.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = burst; ctx.fillRect(0, 135, W, 405);
+      ctx.globalAlpha = .32 * alpha; ctx.strokeStyle = scoreCallout.color; ctx.lineWidth = 6; ctx.shadowColor = scoreCallout.color; ctx.shadowBlur = 18;
+      const inset = 18 + (1 - life) * 24; ctx.strokeRect(inset, inset, W - inset * 2, H - inset * 2);
+      for (let i = 0; i < 8; i++) { const px = ((t * 520 + i * 173) % (W + 180)) - 90; ctx.fillStyle = scoreCallout.kind === 6 ? `hsl(${(t * 180 + i * 45) % 360} 95% 65%)` : scoreCallout.color; ctx.fillRect(px, 147, 58, 5); ctx.fillRect(W - px - 58, 528, 58, 5); }
+      ctx.restore();
+    }
+
     ctx.save(); ctx.globalCompositeOperation = 'screen';
     for (const p of sparks) {
       const y = (p.y - t * p.speed + H) % (H - 120);
@@ -92,6 +120,14 @@ if (canvas && ctx) {
       ctx.fillRect(p.x + Math.sin(t * .6 + p.phase) * 14, y, p.size, p.size * 2.6);
     }
     ctx.restore();
+
+    if (scoreCallout.ttl > 0) {
+      const life = scoreCallout.ttl / scoreCallout.max, pop = 1 + Math.sin((1 - life) * Math.PI) * .055;
+      ctx.save(); ctx.translate(640, 384); ctx.scale(pop, pop); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '900 italic 42px Manrope, sans-serif'; ctx.lineWidth = 10; ctx.strokeStyle = 'rgba(3,5,9,.88)'; ctx.strokeText(scoreCallout.text, 0, 0);
+      ctx.fillStyle = scoreCallout.color; ctx.shadowColor = scoreCallout.color; ctx.shadowBlur = 18; ctx.fillText(scoreCallout.text, 0, 0);
+      ctx.shadowBlur = 0; ctx.font = '800 15px DM Mono, monospace'; ctx.letterSpacing = '4px'; ctx.fillStyle = '#fff'; ctx.fillText(scoreCallout.sub, 0, 42); ctx.restore();
+    }
 
     drawCoin(114 + Math.sin(t * .7) * 7, 174 + Math.cos(t * .5) * 5, 23, t * 2.4);
     drawCoin(1132 + Math.cos(t * .63) * 9, 226 + Math.sin(t * .44) * 7, 18, t * -2.1 + 1.2, .9);
