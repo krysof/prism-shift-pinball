@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=5.3">
+  <link rel="stylesheet" href="styles.css?v=6.0">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -21,6 +21,12 @@
       <span class="brand-mark"><i></i></span>
       <span>MARIO <b>PINBALL</b></span>
     </a>
+    <nav class="theme-switcher top-themes" aria-label="主题场景">
+      <span>SCENE</span>
+      <button type="button" data-theme="kingdom" aria-label="切换到王国城堡主题"><i></i><b>王国</b></button>
+      <button type="button" data-theme="lava" aria-label="切换到熔岩魔城主题"><i></i><b>熔岩</b></button>
+      <button type="button" data-theme="starroad" aria-label="切换到银河星路主题"><i></i><b>星路</b></button>
+    </nav>
     <div class="top-meta">
       <span class="live-dot"></span>
       <span id="wasmStatus">WASM INITIALIZING</span>
@@ -66,7 +72,12 @@
               <div class="intro-card">
                 <p class="eyebrow"><span></span> INSERT COIN / LET'S-A GO! <span></span></p>
                 <h1>MARIO<br><em>PINBALL</em></h1>
-                <p class="tagline">蘑菇王国弹珠大冒险</p>
+                <p class="tagline">三大主题 · 一台传奇机台</p>
+                <nav class="theme-switcher intro-themes" aria-label="选择游戏主题">
+                  <button type="button" data-theme="kingdom"><i></i><b>王国城堡</b></button>
+                  <button type="button" data-theme="lava"><i></i><b>熔岩魔城</b></button>
+                  <button type="button" data-theme="starroad"><i></i><b>银河星路</b></button>
+                </nav>
                 <div class="controls-preview">
                   <div><kbd>A</kbd><kbd>←</kbd><span>左翼</span></div>
                   <div><kbd>D</kbd><kbd>→</kbd><span>右翼</span></div>
@@ -164,8 +175,9 @@
     <span>60 FPS QUANTUM PHYSICS</span>
   </footer>
 
-  <script type="module" src="game.js?v=5.3"></script>
-  <script type="module" src="backbox.js?v=5.3"></script>
-  <script type="module" src="scene3d.js?v=5.3"></script>
+  <script src="theme.js?v=6.0"></script>
+  <script type="module" src="game.js?v=6.0"></script>
+  <script type="module" src="backbox.js?v=6.0"></script>
+  <script type="module" src="scene3d.js?v=6.0"></script>
 </body>
 </html>

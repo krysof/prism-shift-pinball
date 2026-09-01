@@ -3,7 +3,7 @@ const ctx = canvas.getContext('2d', { alpha: false });
 const W = 800, H = 1200;
 const playfieldArt = new Image();
 playfieldArt.decoding = 'async';
-playfieldArt.src = new URL('assets/kingdom-playfield.webp', import.meta.url).href;
+playfieldArt.src = new URL((window.__pinballTheme||{}).playfield||'assets/kingdom-playfield.webp', document.baseURI).href;
 
 const ui = {
   intro: document.querySelector('#intro'), pause: document.querySelector('#pauseLayer'), gameover: document.querySelector('#gameOverLayer'),
@@ -89,6 +89,7 @@ let lastCanvasDraw = 0;
 let elapsed = 0;
 let screenShake = 0;
 let flash = 0;
+let themeFlash = 0;
 let launchHeld = false;
 let launchStart = 0;
 let charge = 0;
@@ -102,6 +103,15 @@ const labels = [];
 const trail = [];
 let highScore = Number(localStorage.getItem('prismShiftHigh') || 0);
 ui.high.textContent = formatScore(highScore);
+
+function applyGameTheme(theme, animate=true) {
+  if(!theme)return;
+  const next=new Image();next.decoding='async';next.onload=()=>{playfieldArt.src=next.src;if(animate)themeFlash=1;};next.src=new URL(theme.playfield,document.baseURI).href;
+  const screenLabel=document.querySelector('.screen-label span'),world=document.querySelector('.console-copy b');
+  if(screenLabel)screenLabel.textContent=theme.subtitle;if(world)world.textContent=`WORLD ${theme.code}-P`;
+}
+window.addEventListener('pinball-theme-change',event=>applyGameTheme(event.detail?.theme));
+applyGameTheme(window.__pinballTheme,false);
 
 const stars = Array.from({ length: 90 }, (_, i) => ({
   x: (Math.sin(i * 983.1) * .5 + .5) * W,
@@ -173,7 +183,7 @@ async function requestWakeLock() {
 }
 
 async function loadWasm() {
-  const url = new URL('game.wasm?v=5.3', import.meta.url);
+  const url = new URL('game.wasm?v=6.0', import.meta.url);
   let instance;
   try {
     if (WebAssembly.instantiateStreaming) {
@@ -400,7 +410,7 @@ function drawCloud(x,y,s=1){
 
 function drawMarioBackdrop(drive){
   if(playfieldArt.complete&&playfieldArt.naturalWidth){ctx.drawImage(playfieldArt,0,0,W,H);}
-  else {const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#16344b');sky.addColorStop(.45,'#256b76');sky.addColorStop(1,'#17130f');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);}
+  else {const theme=window.__pinballTheme||{},sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,theme.scene?.background||'#16344b');sky.addColorStop(.45,theme.accent2||'#256b76');sky.addColorStop(1,'#090708');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);}
   // Printed-glass depth treatment. The generated collector art remains readable without the old flat cartoon backdrop.
   const vignette=ctx.createRadialGradient(400,570,180,400,580,710);vignette.addColorStop(.35,'rgba(2,4,7,0)');vignette.addColorStop(1,'rgba(2,4,7,.48)');ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
   if(drive>0){ctx.save();ctx.globalCompositeOperation='screen';const g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,'rgba(239,51,64,.12)');g.addColorStop(.5,'rgba(255,216,61,.11)');g.addColorStop(1,'rgba(43,140,255,.13)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.restore();}
@@ -442,7 +452,7 @@ function drawMarioDetails(drive){
   // Collector-style printed inserts: restrained, crisp and legible under the 3D hardware.
   const lamps=[[312,742],[356,720],[400,712],[444,720],[488,742]];
   lamps.forEach(([x,y],i)=>{ctx.save();ctx.translate(x,y);ctx.scale(.56,1);ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fillStyle=drive>0?'#fff2ae':'rgba(255,195,45,.54)';ctx.strokeStyle='rgba(255,233,143,.85)';ctx.lineWidth=2;ctx.shadowColor='#f6a619';ctx.shadowBlur=drive>0?14:5;ctx.fill();ctx.stroke();ctx.restore();});
-  ctx.fillStyle='rgba(255,244,207,.86)';ctx.font='800 8px "DM Mono",monospace';ctx.textAlign='center';ctx.fillText('ROYAL COIN LOCK',400,777);
+  const theme=window.__pinballTheme||{};ctx.fillStyle='rgba(255,244,207,.86)';ctx.font='800 8px "DM Mono",monospace';ctx.textAlign='center';ctx.fillText(theme.id==='lava'?'MAGMA CORE LOCK':theme.id==='starroad'?'CELESTIAL STAR LOCK':'ROYAL COIN LOCK',400,777);
   ['M','A','R','I','O'].forEach((ch,i)=>{const x=290+i*55;ctx.fillStyle=i%2?'rgba(43,140,255,.8)':'rgba(239,51,64,.8)';ctx.strokeStyle='rgba(255,244,202,.86)';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x-16,142,32,21,5);ctx.fill();ctx.stroke();ctx.fillStyle='#fff9e9';ctx.font='900 11px Manrope';ctx.fillText(ch,x,157);});
 }
 
@@ -464,7 +474,7 @@ function processEvents() {
 function drawFrame() {
   if(!wasm) return;
   const x=wasm.ball_x(),y=wasm.ball_y(),height=wasm.ball_height?.()||0,vx=wasm.ball_vx(),vy=wasm.ball_vy(),drive=wasm.game_overdrive(),mask=wasm.game_target_mask();
-  window.__pinballState={x,y,height,vx,vy,drive,mask,charge,leftAngle:wasm.left_angle(),rightAngle:wasm.right_angle(),launched:!!wasm.game_launched(),score:wasm.game_score(),lives:wasm.game_lives(),combo:wasm.game_combo(),energy:wasm.game_energy(),ballSave:wasm.game_ball_save(),started,paused};
+  window.__pinballState={x,y,height,vx,vy,drive,mask,charge,leftAngle:wasm.left_angle(),rightAngle:wasm.right_angle(),launched:!!wasm.game_launched(),score:wasm.game_score(),lives:wasm.game_lives(),combo:wasm.game_combo(),energy:wasm.game_energy(),ballSave:wasm.game_ball_save(),theme:window.__pinballTheme?.id||'kingdom',started,paused};
   ctx.save(); if(screenShake>0) ctx.translate((Math.random()-.5)*screenShake,(Math.random()-.5)*screenShake);
   drawMarioBackdrop(drive); drawMarioDetails(drive);
   if(!window.__use3d){
@@ -478,6 +488,7 @@ function drawFrame() {
   drawFx();
   if(drive>0){ctx.save();ctx.globalCompositeOperation='screen';const rainbow=['#ef3340','#ffd83d','#58df66','#2b8cff'];ctx.strokeStyle=rainbow[Math.floor(elapsed*8)%4];ctx.lineWidth=12;ctx.shadowColor='#ffd83d';ctx.shadowBlur=28;if(!window.__use3d)ctx.strokeRect(34,31,732,1135);ctx.fillStyle='#fff';ctx.font='800 12px "DM Mono",monospace';ctx.fillText(`★ STAR POWER  ${drive.toFixed(1)}s`,78,190);ctx.restore();}
   if(flash>0){ctx.fillStyle=`rgba(210,245,255,${flash*.24})`;ctx.fillRect(0,0,W,H);}
+  if(themeFlash>0){ctx.fillStyle=rgba(window.__pinballTheme?.accent||'#ffd83d',themeFlash*.18);ctx.fillRect(0,0,W,H);}
   ctx.restore();
 }
 
@@ -487,13 +498,14 @@ function updateHud(dt) {
   const score=wasm.game_score(), lives=wasm.game_lives(), combo=wasm.game_combo(), energy=wasm.game_energy(), drive=wasm.game_overdrive(),mask=wasm.game_target_mask();
   ui.score.textContent=formatScore(score);ui.lives.textContent='● '.repeat(Math.max(0,lives)).trim()||'—';ui.combo.textContent=`×${String(drive>0?combo*3:combo).padStart(2,'0')}`;ui.backScore.textContent=formatScore(score);ui.backBalls.textContent='● '.repeat(Math.max(0,lives)).trim()||'GAME OVER';
   ui.energy.textContent=drive>0?'MAX':`${Math.round(energy)}%`;ui.fill.style.width=drive>0?'100%':`${energy}%`;ui.fill.style.background=drive>0?'linear-gradient(90deg,#ef3340,#ffd83d,#58df66,#2b8cff)':'';
-  ui.driveHint.textContent=drive>0?`无敌星生效 · 剩余 ${drive.toFixed(1)} 秒`:'收集金币以点亮无敌星';
+  const theme=window.__pinballTheme||{};ui.driveHint.textContent=drive>0?`无敌星生效 · 剩余 ${drive.toFixed(1)} 秒`:(theme.id==='lava'?'撞击目标以充能熔岩核心':theme.id==='starroad'?'点亮星座以开启银河传送门':'收集金币以点亮无敌星');
   ui.targets.textContent=`${mask.toString(2).split('1').length-1}/6`;
   if(score>highScore){highScore=score;ui.high.textContent=formatScore(highScore);localStorage.setItem('prismShiftHigh',highScore);}
 }
 
 function loop(now) {
   const dt=Math.min(.034,(now-lastTime)/1000 || 0);lastTime=now;elapsed+=dt;
+  themeFlash=Math.max(0,themeFlash-dt*2.4);
   if(wasm && started && !paused && !wasm.game_over()){
     if(launchHeld) charge=Math.min(1,(now-launchStart)/1100);else charge=0;
     wasm.game_step(dt,keys.left?1:0,keys.right?1:0);processEvents();updateFx(dt);updateHud(dt);

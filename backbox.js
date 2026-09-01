@@ -5,9 +5,10 @@ if (canvas && ctx) {
   const W = 1280, H = 720;
   const mobile = matchMedia('(max-width: 850px), (orientation: landscape) and (max-height: 650px) and (max-width: 950px)').matches;
   if (mobile) { canvas.width = 640; canvas.height = 360; ctx.setTransform(.5, 0, 0, .5, 0, 0); }
-  const art = new Image();
+  let theme = window.__pinballTheme || window.__pinballThemes?.kingdom || {};
+  let art = new Image(), oldArt = null, artFade = 1;
   art.decoding = 'async';
-  art.src = new URL('assets/kingdom-backbox.webp', import.meta.url).href;
+  art.src = new URL(theme.backbox || 'assets/kingdom-backbox.webp', document.baseURI).href;
 
   const sparks = Array.from({ length: mobile ? 28 : 54 }, (_, i) => ({
     x: (i * 197.3) % W,
@@ -30,12 +31,23 @@ if (canvas && ctx) {
 
   const fmt = value => Math.max(0, value | 0).toString().padStart(6, '0').replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
 
+  function loadBackboxTheme(nextTheme) {
+    if (!nextTheme) return;
+    theme = nextTheme;
+    sparks.forEach((spark, i) => spark.color = theme.sparks?.[i % theme.sparks.length] || spark.color);
+    const next = new Image(); next.decoding = 'async';
+    next.onload = () => { oldArt = art.complete && art.naturalWidth ? art : null; art = next; artFade = oldArt ? 0 : 1; modePulse = 1; };
+    next.src = new URL(theme.backbox, document.baseURI).href;
+  }
+  window.addEventListener('pinball-theme-change', event => loadBackboxTheme(event.detail?.theme));
+  loadBackboxTheme(theme);
+
   window.addEventListener('pinball-score-flash', event => {
     const d = event.detail || {}, kind = Number(d.kind) || 0, value = Number(d.value) || 0;
     const map = {
       1: ['BUMPER HIT', `+${value}  •  COMBO X${Math.max(1, Number(d.combo) || 1)}`, '#ffd24a', .82],
       4: ['BALL DRAIN', 'RETURN TO PLUNGER', '#ff3b4d', .95],
-      5: [value >= 1000 ? 'CASTLE JACKPOT' : 'TARGET BANK', `+${value}`, value >= 1000 ? '#ffe05c' : '#63ed78', value >= 1000 ? 1.45 : .9],
+      5: [value >= 1000 ? (theme.id === 'lava' ? 'MAGMA JACKPOT' : theme.id === 'starroad' ? 'PORTAL JACKPOT' : 'CASTLE JACKPOT') : 'TARGET BANK', `+${value}`, value >= 1000 ? (theme.accent || '#ffe05c') : '#63ed78', value >= 1000 ? 1.45 : .9],
       6: ['STAR POWER', 'ALL SHOTS X3', '#fff06a', 1.65],
       7: ['LAUNCH LANE', 'SKILL SHOT ARMED', '#ffd24a', .72],
       8: ['BALL SAVE', 'SHOOT AGAIN', '#63ed78', 1.15]
@@ -75,19 +87,25 @@ if (canvas && ctx) {
     scorePulse = Math.max(0, scorePulse - dt * 2.4);
     modePulse = Math.max(0, modePulse - dt * 1.25);
     scoreCallout.ttl = Math.max(0, scoreCallout.ttl - dt);
+    artFade = Math.min(1, artFade + dt * 2.2);
 
     ctx.fillStyle = '#05070b'; ctx.fillRect(0, 0, W, H);
-    if (art.complete && art.naturalWidth) {
+    const paintArt = (image, alpha = 1) => {
+      if (!image?.complete || !image.naturalWidth) return false;
       const zoom = 1.025 + Math.sin(t * .19) * .008;
       const dw = W * zoom, dh = H * zoom;
       const dx = (W - dw) * .5 + Math.sin(t * .12) * 11;
       const dy = (H - dh) * .5 + Math.cos(t * .16) * 4;
-      ctx.drawImage(art, dx, dy, dw, dh);
-    } else {
+      ctx.save(); ctx.globalAlpha = alpha; ctx.drawImage(image, dx, dy, dw, dh); ctx.restore(); return true;
+    };
+    const paintedOld = oldArt && artFade < 1 ? paintArt(oldArt, 1) : false;
+    const painted = paintArt(art, paintedOld ? artFade : 1);
+    if (!painted && !paintedOld) {
       const g = ctx.createLinearGradient(0, 0, W, H);
-      g.addColorStop(0, '#112238'); g.addColorStop(.5, '#61311b'); g.addColorStop(1, '#150a12');
+      g.addColorStop(0, theme.scene?.background || '#112238'); g.addColorStop(.5, theme.accent2 || '#61311b'); g.addColorStop(1, '#09050d');
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     }
+    if (artFade >= 1) oldArt = null;
 
     const shade = ctx.createLinearGradient(0, 0, 0, H);
     shade.addColorStop(0, 'rgba(1,4,9,.14)');
@@ -140,15 +158,17 @@ if (canvas && ctx) {
     ctx.strokeText('MARIO  PINBALL', 0, 0);
     ctx.lineWidth = 6; ctx.strokeStyle = '#fff1bc'; ctx.strokeText('MARIO  PINBALL', 0, 0);
     const title = ctx.createLinearGradient(-400, 0, 400, 0);
-    title.addColorStop(0, '#e42e3b'); title.addColorStop(.48, '#ff4a37'); title.addColorStop(.5, '#ffd039'); title.addColorStop(1, '#f2a91f');
-    ctx.fillStyle = title; ctx.shadowColor = 'rgba(255,121,34,.45)'; ctx.shadowBlur = 18; ctx.fillText('MARIO  PINBALL', 0, 0);
+    if(theme.id==='lava'){title.addColorStop(0,'#ff3a22');title.addColorStop(.5,'#ff7a19');title.addColorStop(1,'#ffd054');}
+    else if(theme.id==='starroad'){title.addColorStop(0,'#c45cff');title.addColorStop(.5,'#65e8ff');title.addColorStop(1,'#ffe16b');}
+    else {title.addColorStop(0, '#e42e3b'); title.addColorStop(.48, '#ff4a37'); title.addColorStop(.5, '#ffd039'); title.addColorStop(1, '#f2a91f');}
+    ctx.fillStyle = title; ctx.shadowColor = theme.accent || 'rgba(255,121,34,.45)'; ctx.shadowBlur = 18; ctx.fillText('MARIO  PINBALL', 0, 0);
     ctx.shadowBlur = 0; ctx.font = '800 15px DM Mono, monospace'; ctx.letterSpacing = '6px'; ctx.fillStyle = 'rgba(255,255,255,.83)';
-    ctx.fillText('KINGDOM CASTLE SIEGE', 0, 58);
+    ctx.fillText(theme.subtitle || 'KINGDOM CASTLE SIEGE', 0, 58);
     ctx.restore();
 
     const drive = Number(s.drive || 0);
-    const mode = !s.started ? 'INSERT COIN' : drive > 0 ? 'STAR POWER MULTIBALL' : s.paused ? 'SYSTEM PAUSED' : s.charge > 0 ? `PLUNGER POWER ${Math.round(s.charge * 100)}%` : (s.launched ? 'CASTLE SIEGE' : 'PLUNGER READY');
-    const accent = drive > 0 ? '#ffe051' : s.started ? '#65d9ff' : '#ffbf3a';
+    const mode = !s.started ? 'INSERT COIN' : drive > 0 ? 'STAR POWER MULTIBALL' : s.paused ? 'SYSTEM PAUSED' : s.charge > 0 ? `PLUNGER POWER ${Math.round(s.charge * 100)}%` : (s.launched ? (theme.mode || 'CASTLE SIEGE') : 'PLUNGER READY');
+    const accent = drive > 0 ? '#ffe051' : s.started ? (theme.accent2 || '#65d9ff') : (theme.accent || '#ffbf3a');
 
     ctx.save();
     const panelY = 554;
@@ -162,7 +182,7 @@ if (canvas && ctx) {
     ctx.font = '900 35px Manrope, sans-serif'; ctx.fillStyle = '#f4f4ef'; ctx.letterSpacing = '1px';
     ctx.fillText(mode, 76, panelY + 73);
     ctx.font = '600 12px DM Mono, monospace'; ctx.fillStyle = accent; ctx.letterSpacing = '3px';
-    ctx.fillText(drive > 0 ? `${drive.toFixed(1)} SEC  /  ALL SHOTS ×3` : s.ballSave > 0 ? `BALL SAVE ${s.ballSave.toFixed(1)} SEC  •  SHOOT CASTLE  •  LOCK 3 BALLS` : 'SHOOT CASTLE  •  COMPLETE M-A-R-I-O  •  LOCK 3 BALLS', 77, panelY + 104);
+    ctx.fillText(drive > 0 ? `${drive.toFixed(1)} SEC  /  ALL SHOTS ×3` : s.ballSave > 0 ? `BALL SAVE ${s.ballSave.toFixed(1)} SEC  •  ${theme.mode || 'CASTLE SIEGE'}` : (theme.objective || 'SHOOT CASTLE  •  COMPLETE M-A-R-I-O  •  LOCK 3 BALLS'), 77, panelY + 104);
     if (s.charge > 0) { ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(77, panelY + 116, 420, 4); const cg = ctx.createLinearGradient(77, 0, 497, 0); cg.addColorStop(0, '#e93a42'); cg.addColorStop(.55, '#ffc43c'); cg.addColorStop(1, '#fff1a0'); ctx.fillStyle = cg; ctx.shadowColor = '#ffbd38'; ctx.shadowBlur = 8; ctx.fillRect(77, panelY + 116, 420 * s.charge, 4); ctx.shadowBlur = 0; }
 
     ctx.textAlign = 'right'; ctx.font = `800 ${44 + scorePulse * 5}px DM Mono, monospace`;
