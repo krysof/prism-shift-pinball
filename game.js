@@ -173,7 +173,7 @@ async function requestWakeLock() {
 }
 
 async function loadWasm() {
-  const url = new URL('game.wasm?v=5.2', import.meta.url);
+  const url = new URL('game.wasm?v=5.3', import.meta.url);
   let instance;
   try {
     if (WebAssembly.instantiateStreaming) {
@@ -527,6 +527,8 @@ window.addEventListener('wheel',e=>{if(e.ctrlKey||e.metaKey)e.preventDefault();}
 ['gesturestart','gesturechange','gestureend'].forEach(type=>document.addEventListener(type,e=>e.preventDefault(),{passive:false}));
 document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+document.addEventListener('selectstart',e=>e.preventDefault(),{passive:false});
+document.addEventListener('dragstart',e=>e.preventDefault(),{passive:false});
 document.addEventListener('contextmenu',e=>{if(e.target.closest('canvas,.touch-controls,.canvas-frame'))e.preventDefault();});
 let lastTouchEnd=0;document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<320)e.preventDefault();lastTouchEnd=now;},{passive:false});
 document.addEventListener('pointerdown',()=>{if(started)requestWakeLock();},{passive:true});
