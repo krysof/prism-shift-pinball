@@ -250,7 +250,7 @@ footer { position: relative; z-index: 2; height: 34px; padding: 0 clamp(22px,4vw
 footer button { color: #68718a; border: 0; background: none; cursor: pointer; font: 500 8px DM Mono,monospace; letter-spacing: .13em; }
 footer kbd { margin-left: 5px; min-width: 19px; height: 18px; font-size: 8px; }
 
-@media (max-width: 850px) {
+@media (max-width: 850px), (orientation: landscape) and (max-height: 650px) and (max-width: 950px) {
   .fullscreen-btn { display:grid; }
   .topbar { height: 58px; }
   .game-shell { width: min(100% - 24px, 600px); margin-top: 13px; grid-template-columns: 1fr; }
@@ -378,7 +378,7 @@ footer kbd { margin-left: 5px; min-width: 19px; height: 18px; font-size: 8px; }
 .crown-bolt { top: 10px; }
 .crown-bolt.left { left: 12px; } .crown-bolt.right { right: 12px; }
 
-@media (max-width: 850px) {
+@media (max-width: 850px), (orientation: landscape) and (max-height: 650px) and (max-width: 950px) {
   .machine-crown { width: calc(100% - 12px); height: auto; aspect-ratio: 1.545; padding: 0; }
   .arcade-machine:before, .arcade-machine:after { top: min(66vw, 340px); }
   .backbox-screen { left: 5%; right: 5%; top: 4.2%; }
@@ -401,7 +401,7 @@ footer kbd { margin-left: 5px; min-width: 19px; height: 18px; font-size: 8px; }
 }
 
 /* Phone-first fit: keep both LCDs fully inside the viewport and maximize usable playfield width. */
-@media (max-width: 850px) {
+@media (max-width: 850px), (orientation: landscape) and (max-height: 650px) and (max-width: 950px) {
   body {
     overscroll-behavior-x: none;
     padding-bottom: calc(var(--browser-ui-bottom, 0px) + var(--mobile-control-size, 70px) + max(14px, env(safe-area-inset-bottom)));
@@ -443,4 +443,48 @@ footer kbd { margin-left: 5px; min-width: 19px; height: 18px; font-size: 8px; }
   .machine-lower { width: calc(100% + 6px); }
   .intro-card { width: 90%; }
   .controls-preview { max-width: 280px; }
+}
+
+/* Phone landscape cabinet: rotate the physical playfield itself, not merely the
+   surrounding page, and reserve both side gutters for real arcade controls. */
+@media (orientation: landscape) and (max-height: 650px) and (max-width: 950px) {
+  html, body { width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: none; }
+  body { padding: 0; }
+  .ambient, .noise, .topbar, .stage-lights, .machine-crown, .screen-label,
+  .cabinet-rail, .machine-console, .machine-lower, .hud-panel, footer { display: none !important; }
+  .game-shell, .table-stage, .arcade-machine, .machine-body {
+    position: static; width: 100%; height: 100%; margin: 0; padding: 0; border: 0;
+    background: none; box-shadow: none; transform: none; clip-path: none;
+  }
+  .game-shell { display: block; }
+  .table-stage { display: block; overflow: visible; perspective: none; }
+  .arcade-machine { max-width: none; filter: none; isolation: auto; }
+  .machine-body:before, .arcade-machine:before, .arcade-machine:after { display: none; }
+  .canvas-frame {
+    position: fixed; z-index: 40; left: 50%; top: var(--landscape-field-center, 50%);
+    width: var(--landscape-field-short, 300px); height: auto; min-height: 0; max-height: none;
+    aspect-ratio: 2/3; margin: 0; padding: 4px; transform: translate(-50%,-50%) rotate(90deg);
+    transform-origin: center; border-radius: 10px;
+    box-shadow: 0 12px 36px rgba(0,0,0,.8), 0 0 0 2px #ffdc4c, 0 0 0 7px #05070c, 0 0 0 9px #30384d;
+  }
+  .canvas-frame .modal-layer {
+    inset: auto; left: -25%; top: 16.666%; width: 150%; height: 66.667%;
+    transform: rotate(-90deg); transform-origin: center; border-radius: 8px;
+  }
+  .intro-card { width: min(520px,88%); padding: 10px 18px; }
+  .intro-card h1 { margin: 5px 0; font-size: 34px; line-height: .88; }
+  .intro-card .tagline { margin-bottom: 7px; }
+  .intro-card .controls-preview, .intro-card small { display: none; }
+  .intro-card .primary-btn { height: 42px; margin-top: 7px; }
+  .touch-controls { position: fixed; z-index: 60; inset: 0; display: block; pointer-events: none; }
+  .touch-controls button {
+    position: fixed; width: var(--landscape-side-control, 88px); height: var(--mobile-control-size, 58px);
+    pointer-events: auto; padding: 0 6px; border-radius: 14px; background: rgba(5,8,15,.92);
+  }
+  #touchLeft { left: calc(max(8px, env(safe-area-inset-left))); top: 50%; transform: translateY(-50%); }
+  #touchRight { right: calc(max(8px, env(safe-area-inset-right))); top: 50%; transform: translateY(-50%); }
+  .touch-controls #touchLaunch {
+    position: fixed; left: 50%; right: auto; top: auto; bottom: calc(var(--browser-ui-bottom, 0px) + max(8px, env(safe-area-inset-bottom)));
+    width: var(--mobile-control-size, 58px); height: var(--mobile-control-size, 58px); transform: translateX(-50%);
+  }
 }

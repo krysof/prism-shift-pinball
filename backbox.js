@@ -3,7 +3,7 @@ const ctx = canvas?.getContext('2d', { alpha: false });
 
 if (canvas && ctx) {
   const W = 1280, H = 720;
-  const mobile = matchMedia('(max-width: 850px)').matches;
+  const mobile = matchMedia('(max-width: 850px), (orientation: landscape) and (max-height: 650px) and (max-width: 950px)').matches;
   if (mobile) { canvas.width = 640; canvas.height = 360; ctx.setTransform(.5, 0, 0, .5, 0, 0); }
   const art = new Image();
   art.decoding = 'async';

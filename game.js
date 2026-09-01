@@ -17,14 +17,17 @@ const ui = {
 };
 const touchLaunchButton = document.querySelector('#touchLaunch');
 const touchControls = document.querySelector('.touch-controls');
-const phoneLayout = matchMedia('(max-width: 850px)');
+const landscapeLayout = matchMedia('(orientation: landscape) and (max-height: 650px) and (max-width: 950px)');
+const phoneLayout = matchMedia('(max-width: 850px), (orientation: landscape) and (max-height: 650px) and (max-width: 950px)');
 let viewportSyncFrame = 0;
 
 function syncMobileViewport() {
   viewportSyncFrame = 0;
   const root = document.documentElement;
+  const landscape = landscapeLayout.matches;
+  root.classList.toggle('landscape-playfield', landscape);
   if (!phoneLayout.matches) {
-    ['--browser-ui-bottom','--mobile-control-size','--mobile-playfield-width','--visual-viewport-height'].forEach(name=>root.style.removeProperty(name));
+    ['--browser-ui-bottom','--mobile-control-size','--mobile-playfield-width','--visual-viewport-height','--landscape-field-short','--landscape-field-center','--landscape-side-control'].forEach(name=>root.style.removeProperty(name));
     return;
   }
   const vv = window.visualViewport;
@@ -33,7 +36,8 @@ function syncMobileViewport() {
   const offsetTop = vv?.offsetTop || 0;
   const layoutHeight = Math.max(document.documentElement.clientHeight, innerHeight);
   const layoutGap = Math.max(0, layoutHeight - visibleHeight - offsetTop);
-  const screenGap = Math.max(0, (screen.height || layoutHeight) - visibleHeight - offsetTop);
+  const screenExtent = landscape ? Math.min(screen.width || visibleWidth, screen.height || visibleHeight) : (screen.height || layoutHeight);
+  const screenGap = Math.max(0, screenExtent - visibleHeight - offsetTop);
   const inferredBrowserBar = document.fullscreenElement ? 0 : (layoutGap > 1 ? layoutGap : Math.min(96, screenGap));
   const controlSize = Math.round(Math.max(58, Math.min(72, Math.min(visibleWidth * .19, visibleHeight * .105))));
   root.style.setProperty('--browser-ui-bottom', `${Math.round(inferredBrowserBar)}px`);
@@ -44,11 +48,22 @@ function syncMobileViewport() {
   // On browsers that overlay their URL bar, visualViewport alone can still report
   // a taller CSS viewport, so the inferred bar has to participate in the scale.
   // Reading the resolved bottom also includes the device safe-area inset.
-  const resolvedControlBottom = parseFloat(getComputedStyle(touchControls).bottom) || inferredBrowserBar + 8;
+  const bottomProbe = landscape ? touchLaunchButton : touchControls;
+  const resolvedControlBottom = parseFloat(getComputedStyle(bottomProbe).bottom) || inferredBrowserBar + 8;
   const widthLimit = Math.max(180, visibleWidth - 28);
   const heightLimit = Math.max(160, (visibleHeight - resolvedControlBottom - controlSize - 20) * 2 / 3);
   const playfieldWidth = Math.min(widthLimit, heightLimit);
   root.style.setProperty('--mobile-playfield-width', `${Math.round(playfieldWidth)}px`);
+  if (landscape) {
+    const sideBand = Math.max(82, Math.min(122, visibleWidth * .145));
+    const effectiveHeight = Math.max(190, visibleHeight - inferredBrowserBar - 16);
+    const effectiveWidth = Math.max(300, visibleWidth - sideBand * 2 - 16);
+    const shortEdge = Math.max(180, Math.min(effectiveHeight, effectiveWidth / 1.5));
+    const centerY = offsetTop + effectiveHeight * .5 + 8;
+    root.style.setProperty('--landscape-field-short', `${Math.round(shortEdge)}px`);
+    root.style.setProperty('--landscape-field-center', `${Math.round(centerY)}px`);
+    root.style.setProperty('--landscape-side-control', `${Math.round(sideBand - 16)}px`);
+  }
 }
 
 function scheduleViewportSync() {
@@ -62,6 +77,7 @@ window.addEventListener('scroll', scheduleViewportSync, {passive:true});
 window.visualViewport?.addEventListener('resize', scheduleViewportSync, {passive:true});
 window.visualViewport?.addEventListener('scroll', scheduleViewportSync, {passive:true});
 document.addEventListener('fullscreenchange', scheduleViewportSync);
+landscapeLayout.addEventListener?.('change', scheduleViewportSync);
 
 let wasm;
 let started = false;
@@ -77,6 +93,8 @@ let launchHeld = false;
 let launchStart = 0;
 let charge = 0;
 let wakeLock = null;
+let wakeRetry = 0;
+let noSleepVideo = null;
 const keys = { left: false, right: false };
 const particles = [];
 const rings = [];
@@ -116,9 +134,24 @@ class Synth {
 }
 const synth = new Synth();
 
+async function startNoSleepFallback() {
+  if (!noSleepVideo) {
+    noSleepVideo = document.createElement('video');
+    const wakeAsset = noSleepVideo.canPlayType('video/webm; codecs="vp8"') ? 'assets/wake.webm?v=1' : 'assets/wake.mp4?v=1';
+    noSleepVideo.src = new URL(wakeAsset, import.meta.url).href;
+    noSleepVideo.loop = true; noSleepVideo.muted = true; noSleepVideo.playsInline = true;
+    noSleepVideo.setAttribute('playsinline',''); noSleepVideo.setAttribute('webkit-playsinline','');
+    noSleepVideo.style.cssText = 'position:fixed;width:1px;height:1px;opacity:.001;pointer-events:none;left:-2px;bottom:0';
+    document.body.appendChild(noSleepVideo);
+  }
+  try { if (noSleepVideo.paused) await noSleepVideo.play(); } catch (_) {}
+}
+
 async function requestWakeLock() {
+  startNoSleepFallback();
   if (!('wakeLock' in navigator)) {
-    ui.wake.textContent = 'WAKE LOCK N/A';
+    ui.wake.textContent = 'NO-SLEEP ACTIVE';
+    ui.wake.classList.add('locked');
     return;
   }
   try {
@@ -129,16 +162,18 @@ async function requestWakeLock() {
       wakeLock.addEventListener('release', () => {
         ui.wake.textContent = 'SCREEN READY';
         ui.wake.classList.remove('locked');
+        clearTimeout(wakeRetry);
+        if (!document.hidden && started && !paused) wakeRetry = setTimeout(requestWakeLock, 350);
       });
     }
   } catch (_) {
-    ui.wake.textContent = 'TAP TO WAKE';
-    ui.wake.classList.remove('locked');
+    ui.wake.textContent = 'NO-SLEEP ACTIVE';
+    ui.wake.classList.add('locked');
   }
 }
 
 async function loadWasm() {
-  const url = new URL('game.wasm?v=5.0', import.meta.url);
+  const url = new URL('game.wasm?v=5.1', import.meta.url);
   let instance;
   try {
     if (WebAssembly.instantiateStreaming) {
@@ -467,8 +502,8 @@ function loop(now) {
   if(!phoneLayout.matches||now-lastCanvasDraw>31){drawFrame();lastCanvasDraw=now;}requestAnimationFrame(loop);
 }
 
-function focusPlayfield(){if(!phoneLayout.matches)return;syncMobileViewport();setTimeout(()=>{const frame=document.querySelector('.canvas-frame');if(!frame)return;const vv=window.visualViewport;const controlsTop=touchControls?.getBoundingClientRect().top||(vv?.height||innerHeight);const rect=frame.getBoundingClientRect();const pageTop=scrollY+rect.top;const topGap=Math.max(8,(controlsTop-rect.height-16)/2)+(vv?.offsetTop||0);scrollTo({top:Math.max(0,pageTop-topGap),behavior:'smooth'});},180);}
-async function toggleFullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch(_){}requestWakeLock();}
+function focusPlayfield(){if(!phoneLayout.matches)return;syncMobileViewport();if(landscapeLayout.matches){scrollTo(0,0);return;}setTimeout(()=>{const frame=document.querySelector('.canvas-frame');if(!frame)return;const vv=window.visualViewport;const controlsTop=touchControls?.getBoundingClientRect().top||(vv?.height||innerHeight);const rect=frame.getBoundingClientRect();const pageTop=scrollY+rect.top;const topGap=Math.max(8,(controlsTop-rect.height-16)/2)+(vv?.offsetTop||0);scrollTo({top:Math.max(0,pageTop-topGap),behavior:'smooth'});},180);}
+async function toggleFullscreen(){try{if(document.fullscreenElement){await document.exitFullscreen();screen.orientation?.unlock?.();}else if(document.documentElement.requestFullscreen){await document.documentElement.requestFullscreen({navigationUI:'hide'});if(landscapeLayout.matches)try{await screen.orientation?.lock?.('landscape');}catch(_){}}}catch(_){}scheduleViewportSync();requestWakeLock();}
 function startGame(){ synth.init();requestWakeLock();started=true;paused=false;finishedShown=false;ui.intro.classList.remove('is-open');ui.gameover.classList.remove('is-open');lastTime=performance.now();focusPlayfield(); }
 function restartGame(){wasm.game_restart();trail.length=particles.length=rings.length=labels.length=0;startGame();}
 function setPause(value){if(!started||wasm.game_over())return;paused=value;if(!value)requestWakeLock();ui.pause.classList.toggle('is-open',paused);lastTime=performance.now();}
@@ -489,9 +524,12 @@ window.addEventListener('blur',()=>{keys.left=keys.right=false;if(started&&!paus
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&!paused)setPause(true);else if(!document.hidden&&started)requestWakeLock();});
 window.addEventListener('wheel',e=>{if(e.ctrlKey||e.metaKey)e.preventDefault();},{passive:false});
 ['gesturestart','gesturechange','gestureend'].forEach(type=>document.addEventListener(type,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+document.addEventListener('contextmenu',e=>{if(e.target.closest('canvas,.touch-controls,.canvas-frame'))e.preventDefault();});
 let lastTouchEnd=0;document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<320)e.preventDefault();lastTouchEnd=now;},{passive:false});
 document.addEventListener('pointerdown',()=>{if(started)requestWakeLock();},{passive:true});
+screen.orientation?.addEventListener?.('change',()=>{scheduleViewportSync();if(started)requestWakeLock();});
 ui.start.addEventListener('click',startGame);ui.resume.addEventListener('click',()=>setPause(false));ui.restart.addEventListener('click',restartGame);ui.pauseBtn.addEventListener('click',()=>setPause(!paused));
 ui.fullscreen?.addEventListener('click',toggleFullscreen);
 ui.sound.addEventListener('click',()=>{muted=!muted;ui.sound.classList.toggle('muted',muted);ui.sound.setAttribute('aria-label',muted?'开启声音':'关闭声音');if(!muted)synth.tone(560,.08,'sine',.025,220);});
